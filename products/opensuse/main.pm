@@ -367,6 +367,24 @@ elsif (get_var("ISO_IN_EXTERNAL_DRIVE")) {
     load_inst_tests();
     load_reboot_tests();
 }
+elsif (get_var('CPU_BUGS')) {
+    boot_hdd_image;
+    loadtest "console/system_prepare";
+    loadtest "console/consoletest_setup";
+    loadtest "console/hostname";
+    if (get_var('MELTDOWN')) {
+        loadtest "cpu_bugs/meltdown";
+    }
+    if (get_var('SPECTRE_V2')) {
+        loadtest "cpu_bugs/spectre_v2";
+    }
+    if (get_var('SPECTRE_V4')) {
+        loadtest "cpu_bugs/spectre_v4";
+    }
+    if (get_var('L1TF')) {
+        loadtest "cpu_bugs/l1tf";
+    }
+}
 elsif (get_var('SECURITY_TEST')) {
     prepare_target();
     load_security_tests;
