@@ -19,9 +19,10 @@ use utils;
 use power_action_utils 'power_action';
 use Cpuinfo;
 
+my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
+
 sub run {
     my $self = shift;
-    my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
     my $cpuinfo = Cpuinfo->new();
     select_console 'root-console';
 #check default status
@@ -156,6 +157,16 @@ sub run {
 
 sub test_flags {
     return {milestone => 1, fatal => 0};
+}
+
+sub post_fail_hook {
+    my ($self) = @_; 
+    select_console 'root-console';
+    assert_script_run("md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload");
+    remove_grub_cmdline_settings("spec_store_bypass_disable=.*")
+    grub_mkconfig;
+    upload_logs '/tmp/upload.tar.bz2';
+    $self->SUPER::post_fail_hook;
 }
 
 1;
