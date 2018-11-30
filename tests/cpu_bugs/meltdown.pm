@@ -11,24 +11,27 @@
 # Summary: CPU BUGS on Linux kernel check
 # Maintainer: James Wang <jnwang@suse.com>
 
+use cpu_bugs;
 use base "consoletest";
 use bootloader_setup;
+use ipmi_backend_utils;
+use power_action_utils 'power_action';
 use strict;
 use testapi;
 use utils;
-use power_action_utils 'power_action';
+
+my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 
 sub run {
     my $self = shift;
-    my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
     select_console 'root-console';
 #check default status
     assert_script_run('cat /proc/cmdline');
-    assert_script_run('if ! grep "pti=off" /proc/cpuinfo; then true; else false; fi');
-#check cpu flags
+    assert_script_run('grep -v "pti=off" /proc/cmdline');
+#che#ck cpu flags
     assert_script_run('cat /proc/cpuinfo');
     assert_script_run('cat /proc/cpuinfo | grep "^flags.*pti.*"');
-#check sysfs
+#che#ck sysfs
     assert_script_run('cat ' . $syspath . 'meltdown');
     assert_script_run('cat ' . $syspath . 'meltdown' . '| grep "^Mitigation: PTI$"');
     assert_script_run('dmesg | grep "Kernel/User page tables isolation: enabled"');
@@ -37,9 +40,8 @@ sub run {
     add_grub_cmdline_settings("pti=off");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
+
 
 #recheck the status of pti=off
     assert_script_run('cat /proc/cmdline');
@@ -52,12 +54,24 @@ sub run {
     assert_script_run('cat ' . $syspath . 'meltdown' . '| grep "^Vulnerable$"');
 #chech dmesg
     assert_script_run('dmesg | grep "Kernel/User page tables isolation: disabled on command line."');
-
+    remove_grub_cmdline_settings("pti=off");
+    grub_mkconfig;
 
 }
 
 sub test_flags {
     return {milestone => 1, fatal => 0};
+}
+
+sub post_fail_hook {
+    my ($self) = @_; 
+    select_console 'root-console';
+    assert_script_run("md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload");
+    remove_grub_cmdline_settings("pti=off");
+    remove_grub_cmdline_settings("nopti");
+    grub_mkconfig;
+    upload_logs '/tmp/upload.tar.bz2';
+    $self->SUPER::post_fail_hook;
 }
 
 1;
