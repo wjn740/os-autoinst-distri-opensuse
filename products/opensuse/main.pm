@@ -368,10 +368,15 @@ elsif (get_var("ISO_IN_EXTERNAL_DRIVE")) {
     load_reboot_tests();
 }
 elsif (get_var('CPU_BUGS')) {
-    boot_hdd_image;
-    loadtest "console/system_prepare";
-    loadtest "console/consoletest_setup";
-    loadtest "console/hostname";
+    if (check_var('BACKEND', 'ipmi')) {
+        loadtest "cpu_bugs/login_console";
+    }
+    elsif (check_var('BACKEND', 'qemu')) {
+        boot_hdd_image;
+        loadtest "console/system_prepare";
+        loadtest "console/consoletest_setup";
+        loadtest "console/hostname";
+    }
     if (get_var('MELTDOWN')) {
         loadtest "cpu_bugs/meltdown";
     }

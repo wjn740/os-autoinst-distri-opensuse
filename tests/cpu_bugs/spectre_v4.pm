@@ -11,26 +11,28 @@
 # Summary: CPU BUGS on Linux kernel check
 # Maintainer: James Wang <jnwang@suse.com>
 
+use cpu_bugs;
 use base "consoletest";
 use bootloader_setup;
+use ipmi_backend_utils;
+use power_action_utils 'power_action';
 use strict;
 use testapi;
 use utils;
-use power_action_utils 'power_action';
-use Cpuinfo;
+
+my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 
 sub run {
     my $self = shift;
-    my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
-    my $cpuinfo = Cpuinfo->new();
     select_console 'root-console';
 #check default status
     assert_script_run('cat /proc/cmdline');
-    assert_script_run('if ! grep "nospec_store_bypass_disable" /proc/cmdline; then true; else false; fi');
-    assert_script_run('if ! grep "spec_store_bypass_disable=off" /proc/cmdline; then true; else false; fi');
+    assert_script_run('grep -v "nospec_store_bypass_disable" /proc/cmdline');
+    assert_script_run('grep -v "spec_store_bypass_disable=off" /proc/cmdline');
 #check cpu flags
     assert_script_run('cat /proc/cpuinfo');
     assert_script_run('cat /proc/cpuinfo | grep "^flags.*ssbd.*"');
+    assert_script_run('lscpu | grep "^Flags.*ssbd.*"');
 #check sysfs
     assert_script_run('cat ' . $syspath . 'spec_store_bypass');
     assert_script_run('cat ' . $syspath . 'spec_store_bypass' . '| grep "^Mitigation: Speculative Store Bypass disabled via prctl and seccomp$"');
@@ -43,9 +45,7 @@ sub run {
     add_grub_cmdline_settings("spec_store_bypass_disable=off");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of spec_store_bypass_disable=off
     assert_script_run('cat /proc/cmdline');
@@ -66,9 +66,7 @@ sub run {
     add_grub_cmdline_settings("spec_store_bypass_disable=auto");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of spec_store_bypass_disable=auto
     assert_script_run('cat /proc/cmdline');
@@ -95,9 +93,7 @@ sub run {
     add_grub_cmdline_settings("spec_store_bypass_disable=prctl");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of spec_store_bypass_disable=prctl
     assert_script_run('cat /proc/cmdline');
@@ -119,9 +115,7 @@ sub run {
     add_grub_cmdline_settings("spec_store_bypass_disable=seccomp");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of spec_store_bypass_disable=seccomp
     assert_script_run('cat /proc/cmdline');
@@ -142,9 +136,7 @@ sub run {
     add_grub_cmdline_settings("spec_store_bypass_disable=test");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of spec_store_bypass_disable=test
     assert_script_run('cat /proc/cmdline');
@@ -162,6 +154,16 @@ sub run {
 
 sub test_flags {
     return {milestone => 1, fatal => 0};
+}
+
+sub post_fail_hook {
+    my ($self) = @_; 
+    select_console 'root-console';
+    assert_script_run("md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload");
+    remove_grub_cmdline_settings("spec_store_bypass_disable=.*");
+    grub_mkconfig;
+    upload_logs '/tmp/upload.tar.bz2';
+    $self->SUPER::post_fail_hook;
 }
 
 1;
