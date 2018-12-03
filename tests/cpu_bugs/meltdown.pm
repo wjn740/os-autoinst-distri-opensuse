@@ -27,7 +27,13 @@ sub run {
     select_console 'root-console';
 #check default status
     assert_script_run('cat /proc/cmdline');
-    assert_script_run('grep -v "pti=off" /proc/cmdline');
+    my $ret = script_run('grep -v "pti=off" /proc/cmdline');
+    if ($ret ne 0) {
+        remove_grub_cmdline_settings("pti=off");
+        grub_mkconfig;
+        reboot_and_wait(timeout => 70);
+        assert_script_run('grep -v "pti=off" /proc/cmdline');
+    }
 #che#ck cpu flags
     assert_script_run('cat /proc/cpuinfo');
     assert_script_run('cat /proc/cpuinfo | grep "^flags.*pti.*"');
