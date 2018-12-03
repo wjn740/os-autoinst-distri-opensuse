@@ -17,21 +17,23 @@ use strict;
 use testapi;
 use utils;
 use power_action_utils 'power_action';
-use Cpuinfo;
+use cpu_bugs;
 
 my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 
 sub run {
     my $self = shift;
-    my $cpuinfo = Cpuinfo->new();
     select_console 'root-console';
 #check default status
     assert_script_run('cat /proc/cmdline');
-    assert_script_run('if ! grep "l1tf=off" /proc/cmdline; then true; else false; fi');
+    my $ret = script_run('grep -v "l1tf=off" /proc/cmdline');
+    if ($ret ne 0) {
+        remove_grub_cmdline_settings("l1tf=off");
+        reboot_and_wait(timeout => 70);
+    }
 #check cpu flags.
 #Processor platform support these feature, whatever this is a VM or PM.
-    assert_script_run('cat /proc/cpuinfo');
-    my $ret = script_run('cat /proc/cpuinfo | grep "^flags.*vmx.*"');
+    $ret = script_run('cat /proc/cpuinfo | grep "^flags.*vmx.*"');
     if ($ret ne 0) {
 	record_soft_failure("This machine doesn't support VMX feature.");
     	assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion$"');
@@ -51,9 +53,7 @@ sub run {
     add_grub_cmdline_settings("l1tf=off");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of l1tf=off
     assert_script_run('cat /proc/cmdline');
@@ -73,9 +73,7 @@ sub run {
     add_grub_cmdline_settings("l1tf=full");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of spec_store_bypass_disable=full
     assert_script_run('cat /proc/cmdline');
@@ -93,9 +91,7 @@ sub run {
     add_grub_cmdline_settings("l1tf=full,force");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of l1tf=full,force
     assert_script_run('cat /proc/cmdline');
@@ -119,9 +115,7 @@ sub run {
     add_grub_cmdline_settings("l1tf=flush,nosmt");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of l1tf=flush,nosmt
     assert_script_run('cat /proc/cmdline');
@@ -140,9 +134,7 @@ sub run {
     add_grub_cmdline_settings("l1tf=flush,nowarn");
     grub_mkconfig;
 #reboot and stand by 
-    power_action('reboot', textmode => 1);
-    $self->wait_boot(textmode => 1);
-    select_console('root-console');
+    reboot_and_wait(timeout => 70);
 
 #recheck the status of l1tf=flush,nowarn
     assert_script_run('cat /proc/cmdline');
@@ -153,6 +145,26 @@ sub run {
     assert_script_run('cat ' . $syspath . 'l1tf');
     assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable$"');
     remove_grub_cmdline_settings("l1tf=flush,nowarn");
+
+
+#########
+# Sub case 6: l1tf=test
+#########
+#add l1tf=flush,nowarn parameter to trigger a exception
+    add_grub_cmdline_settings("l1tf=test");
+    grub_mkconfig;
+#reboot and stand by 
+    reboot_and_wait(timeout => 70);
+
+#recheck the status of l1tf=test
+    assert_script_run('cat /proc/cmdline');
+    assert_script_run('grep "l1tf=test" /proc/cmdline');
+#check cpu flags
+    assert_script_run('cat /proc/cpuinfo');
+#check sysfs
+    assert_script_run('cat ' . $syspath . 'l1tf');
+    assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable$"');
+    remove_grub_cmdline_settings("l1tf=test");
 }
 
 sub test_flags {
@@ -163,7 +175,7 @@ sub post_fail_hook {
     my ($self) = @_; 
     select_console 'root-console';
     assert_script_run("md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload");
-    remove_grub_cmdline_settings("spec_store_bypass_disable=.*")
+    remove_grub_cmdline_settings('l1tf=[a-z,]*');
     grub_mkconfig;
     upload_logs '/tmp/upload.tar.bz2';
     $self->SUPER::post_fail_hook;

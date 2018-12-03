@@ -22,8 +22,7 @@ use ipmi_backend_utils;
 sub reboot_and_wait {
     my ($self, $timeout) = @_;
     power_action('reboot', textmode => 1, keepconsole => 1);
-    switch_from_ssh_to_sol_console(reset_console_flag => 'off');
-    reset_consoles;
+    switch_from_ssh_to_sol_console(reset_console_flag => 'on');
     check_screen('login_screen', $timeout);
     use_ssh_serial_console;
 }

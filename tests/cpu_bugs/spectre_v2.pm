@@ -86,6 +86,7 @@ sub run {
     assert_script_run('cat ' . $syspath . 'spectre_v2' . '| grep "^Vulnerable$"');
 #chech dmesg
     assert_script_run('dmesg | grep -v "Spectre V2"');
+    remove_grub_cmdline_settings("spectre_v2=off");
 
 
 }
@@ -99,7 +100,7 @@ sub post_fail_hook {
     select_console 'root-console';
     assert_script_run("md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload");
     remove_grub_cmdline_settings("nospectre_v2");
-    remove_grub_cmdline_settings("spectre_v2=.*");
+    remove_grub_cmdline_settings('spectre_v2=.*[^"]');
     grub_mkconfig;
     upload_logs '/tmp/upload.tar.bz2';
     $self->SUPER::post_fail_hook;
