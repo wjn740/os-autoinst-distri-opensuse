@@ -28,8 +28,8 @@ sub run {
     select_console 'root-console';
 #check default status
     assert_script_run('cat /proc/cmdline');
-    my $ret1 = assert_script_run('grep -v "nospectre_v2" /proc/cmdline');
-    my $ret2 = assert_script_run('grep -v "spectre_v2=off" /proc/cmdline');
+    my $ret1 = script_run('grep -v "nospectre_v2" /proc/cmdline');
+    my $ret2 = script_run('grep -v "spectre_v2=off" /proc/cmdline');
     if ($ret1 ne 0 or $ret2 ne 0) {
         remove_grub_cmdline_settings("nospectre_v2");
         remove_grub_cmdline_settings("spectre_v2=off");
