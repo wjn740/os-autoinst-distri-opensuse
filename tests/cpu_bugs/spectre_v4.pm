@@ -160,7 +160,7 @@ sub post_fail_hook {
     my ($self) = @_; 
     select_console 'root-console';
     assert_script_run("md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload");
-    remove_grub_cmdline_settings("spec_store_bypass_disable=.*");
+    remove_grub_cmdline_settings('spec_store_bypass_disable=.*[\"]');
     grub_mkconfig;
     upload_logs '/tmp/upload.tar.bz2';
     $self->SUPER::post_fail_hook;
