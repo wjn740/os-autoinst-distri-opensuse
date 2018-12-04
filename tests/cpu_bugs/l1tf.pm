@@ -23,12 +23,13 @@ my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 
 sub run {
     my $self = shift;
+    my $smt = undef;
     select_console 'root-console';
 #check default status
     assert_script_run('cat /proc/cmdline');
-    my $ret = script_run('grep -v "l1tf=off" /proc/cmdline');
+    my $ret = script_run('grep -v "l1tf=.*" /proc/cmdline');
     if ($ret ne 0) {
-        remove_grub_cmdline_settings("l1tf=off");
+        remove_grub_cmdline_settings("l1tf=[a-z,]*");
         reboot_and_wait(timeout => 70);
     }
 #check cpu flags.
@@ -45,6 +46,13 @@ sub run {
 #check sysfs
     assert_script_run('cat ' . $syspath . 'l1tf');
     assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable$"');
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"cond\"");
+    assert_script_run("echo \"never\" > /sys/module/kvm_intel/parameters/vmentry_l1d_flush");
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"nenver\"");
+    $smt = script_output("cat /sys/devices/system/cpu/smt/control");
+    if ($smt != "notsupported") {
+        assert_script_run("cat /sys/devices/system/cpu/smt/control | grep \"on\"");
+    }
 
 #########
 # Sub case 1: l1tf=off
@@ -61,7 +69,15 @@ sub run {
 #check sysfs
     assert_script_run('cat ' . $syspath . 'l1tf');
     assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion; VMX: vulnerable$"');
-#chech dmesg
+
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"never\"");
+    assert_script_run("echo \"cond\" > /sys/module/kvm_intel/parameters/vmentry_l1d_flush");
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"cond\"");
+    $smt = script_output("cat /sys/devices/system/cpu/smt/control");
+    if ($smt != "notsupported") {
+        assert_script_run("cat /sys/devices/system/cpu/smt/control | grep \"on\"");
+    }
+#remove parameter
     remove_grub_cmdline_settings("l1tf=off");
 
 
@@ -81,6 +97,15 @@ sub run {
 #check sysfs
     assert_script_run('cat ' . $syspath . 'l1tf');
     assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion; VMX: cache flushes, SMT disabled$"');
+
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"always\"");
+    assert_script_run("echo \"cond\" > /sys/module/kvm_intel/parameters/vmentry_l1d_flush");
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"cond\"");
+    $smt = script_output("cat /sys/devices/system/cpu/smt/control");
+    if ($smt != "notsupported") {
+        assert_script_run("cat /sys/devices/system/cpu/smt/control | grep \"off\"");
+    }
+
     remove_grub_cmdline_settings("l1tf=full");
 
 
@@ -102,7 +127,14 @@ sub run {
     assert_script_run('cat ' . $syspath . 'l1tf');
     assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion; VMX: cache flushes, SMT disabled$"');
 
-
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"always\"");
+    assert_script_run("echo \"cond\" > /sys/module/kvm_intel/parameters/vmentry_l1d_flush");
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | tee \"always\"");
+    $smt = script_output("cat /sys/devices/system/cpu/smt/control");
+    if ($smt != "notsupported") {
+        assert_script_run("cat /sys/devices/system/cpu/smt/control | grep \"forceoff\"");
+        wait_serial("forceoff");
+    }
 
 #remove parameter
     remove_grub_cmdline_settings("l1tf=full,force");
@@ -125,6 +157,15 @@ sub run {
 #check sysfs
     assert_script_run('cat ' . $syspath . 'l1tf');
     assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT disabled$"');
+
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"always\"");
+    assert_script_run("echo \"cond\" > /sys/module/kvm_intel/parameters/vmentry_l1d_flush");
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"cond\"");
+    $smt = script_output("cat /sys/devices/system/cpu/smt/control");
+    if ($smt != "notsupported") {
+        assert_script_run("cat /sys/devices/system/cpu/smt/control | grep \"off\"");
+    }
+
     remove_grub_cmdline_settings("l1tf=flush,nosmt");
 
 #########
@@ -144,6 +185,14 @@ sub run {
 #check sysfs
     assert_script_run('cat ' . $syspath . 'l1tf');
     assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable$"');
+
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"cond\"");
+    assert_script_run("echo \"never\" > /sys/module/kvm_intel/parameters/vmentry_l1d_flush");
+    assert_script_run("cat /sys/module/kvm_intel/parameters/vmentry_l1d_flush | grep \"never\"");
+    $smt = script_output("cat /sys/devices/system/cpu/smt/control");
+    if ($smt != "notsupported") {
+        assert_script_run("cat /sys/devices/system/cpu/smt/control | grep \"on\"");
+    }
     remove_grub_cmdline_settings("l1tf=flush,nowarn");
 
 
@@ -165,6 +214,19 @@ sub run {
     assert_script_run('cat ' . $syspath . 'l1tf');
     assert_script_run('cat ' . $syspath . 'l1tf' . '| grep "^Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable$"');
     remove_grub_cmdline_settings("l1tf=test");
+}
+
+#########
+# Sub case 7: EPT is 0 
+#########
+#add l1tf=flush,nowarn parameter to trigger a exception
+    add_grub_cmdline_settings("kvm-intel.ept=0");
+    grub_mkconfig;
+#reboot and stand by 
+    reboot_and_wait(timeout => 70);
+#check sysfs
+    assert_script_run('cat /sys/module/kvm_intel/parameters/ept | grep "^N$"');
+    remove_grub_cmdline_settings("kvm-intel.ept=0");
 }
 
 sub test_flags {
