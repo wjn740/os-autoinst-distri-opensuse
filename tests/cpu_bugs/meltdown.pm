@@ -63,6 +63,28 @@ sub run {
     remove_grub_cmdline_settings("pti=off");
     grub_mkconfig;
 
+
+#add pti=auto parameter to disable meltdown mitigation
+    add_grub_cmdline_settings("pti=auto");
+    grub_mkconfig;
+#reboot and stand by 
+    reboot_and_wait(timeout => 70);
+
+
+#recheck the status of pti=auto
+    assert_script_run('cat /proc/cmdline');
+    assert_script_run('grep "pti=auto" /proc/cmdline');
+#check cpu flags
+    assert_script_run('cat /proc/cpuinfo');
+    assert_script_run('if ! grep "^flags.*pti.*" /proc/cpuinfo; then true; else false; fi');
+#check sysfs
+    assert_script_run('cat ' . $syspath . 'meltdown');
+    assert_script_run('cat ' . $syspath . 'meltdown' . '| grep "^Mitigation: PTI$"');
+#chech dmesg
+    assert_script_run('dmesg | grep "Kernel/User page tables isolation: enabled"');
+    remove_grub_cmdline_settings("pti=auto");
+    grub_mkconfig;
+
 }
 
 sub test_flags {
