@@ -33,6 +33,7 @@ sub login_to_console {
     else {
         use_ssh_serial_console;
     }
+
 }
 
 sub run {
