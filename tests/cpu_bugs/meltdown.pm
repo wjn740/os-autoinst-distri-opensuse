@@ -27,9 +27,9 @@ sub run {
     select_console 'root-console';
 #check default status
     assert_script_run('cat /proc/cmdline');
-    my $ret = script_run('grep -v "pti=off" /proc/cmdline');
+    my $ret = script_run('grep -v "pti=[a-z]*" /proc/cmdline');
     if ($ret ne 0) {
-        remove_grub_cmdline_settings("pti=off");
+        remove_grub_cmdline_settings("pti=[a-z]*");
         grub_mkconfig;
         reboot_and_wait(timeout => 70);
         assert_script_run('grep -v "pti=off" /proc/cmdline');
@@ -76,7 +76,7 @@ sub run {
     assert_script_run('grep "pti=auto" /proc/cmdline');
 #check cpu flags
     assert_script_run('cat /proc/cpuinfo');
-    assert_script_run('if ! grep "^flags.*pti.*" /proc/cpuinfo; then true; else false; fi');
+    assert_script_run('grep "^flags.*pti.*" /proc/cpuinfo');
 #check sysfs
     assert_script_run('cat ' . $syspath . 'meltdown');
     assert_script_run('cat ' . $syspath . 'meltdown' . '| grep "^Mitigation: PTI$"');

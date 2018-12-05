@@ -25,10 +25,26 @@ my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 sub run {
     my $self = shift;
     select_console 'root-console';
+
+    zypper_call("in cpuid");
+    my $edx = script_output("cpuid -1 -l 7 -s 0 -r | awk \'{print \$6}\' | awk -F \"=\" \'{print \$2}\' | tail -n1");
+    if (hex $edx & 0x80000000) {
+        assert_script_run("(echo \"Ucode has been update for SSBD support\") | tee /dev/$serialdev");
+        record_info('ok', "Hardware support SSBD");
+    }else {
+        record_info('fail', "Hardware doesn't support SSBD");
+	die "Hardware doesn't support SSBD";
+    }
+
 #check default status
     assert_script_run('cat /proc/cmdline');
-    assert_script_run('grep -v "nospec_store_bypass_disable" /proc/cmdline');
-    assert_script_run('grep -v "spec_store_bypass_disable=off" /proc/cmdline');
+    my $ret1 = script_run('grep -v "nospec_store_bypass_disable" /proc/cmdline');
+    my $ret2 = script_run('grep -v "spec_store_bypass_disable=off" /proc/cmdline');
+    if ($ret1 ne 0 or $ret2 ne 0) {
+        remove_grub_cmdline_settings("nospec_store_bypass_disable");
+        remove_grub_cmdline_settings("spec_store_bypass_disable=[a-z,]*");
+        grub_mkconfig;
+    }
 #check cpu flags
     assert_script_run('cat /proc/cpuinfo');
     assert_script_run('cat /proc/cpuinfo | grep "^flags.*ssbd.*"');
