@@ -23,7 +23,7 @@ use ipmi_backend_utils;
 
 sub login_to_console {
     my ($self, $timeout) = @_;
-    $timeout //= 70;
+    $timeout = 70;
 
     select_console 'sol', await_console => 0;
     if (check_screen('login_screen', $timeout)) {
