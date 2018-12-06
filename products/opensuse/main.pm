@@ -375,6 +375,9 @@ elsif (get_var('CPU_BUGS')) {
     if (get_var('L1TF')) {
         loadtest "cpu_bugs/l1tf";
     }
+    if (get_var('KVM_GUEST_INST')) {
+        loadtest "cpu_bugs/kvm_guest_install";
+    }
 }
 elsif (get_var('SECURITY_TEST')) {
     boot_hdd_image;
