@@ -44,6 +44,7 @@ sub run {
         remove_grub_cmdline_settings("nospec_store_bypass_disable");
         remove_grub_cmdline_settings("spec_store_bypass_disable=[a-z,]*");
         grub_mkconfig;
+	reboot_and_wait(timeout => 70);
     }
 #check cpu flags
     assert_script_run('cat /proc/cpuinfo');
@@ -176,7 +177,8 @@ sub post_fail_hook {
     my ($self) = @_; 
     select_console 'root-console';
     assert_script_run("md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload");
-    remove_grub_cmdline_settings('spec_store_bypass_disable=.*[\"]');
+    remove_grub_cmdline_settings('spec_store_bypass_disable=[a-z,]*');
+    remove_grub_cmdline_settings('nospec_store_bypass_disable');
     grub_mkconfig;
     upload_logs '/tmp/upload.tar.bz2';
     $self->SUPER::post_fail_hook;

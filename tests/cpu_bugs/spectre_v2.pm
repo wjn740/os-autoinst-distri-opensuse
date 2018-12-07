@@ -40,10 +40,10 @@ sub run {
 #check default status
     assert_script_run('cat /proc/cmdline');
     my $ret1 = script_run('grep -v "nospectre_v2" /proc/cmdline');
-    my $ret2 = script_run('grep -v "spectre_v2=[a-z,].*" /proc/cmdline');
+    my $ret2 = script_run('grep -v "spectre_v2=[a-z,]*" /proc/cmdline');
     if ($ret1 ne 0 or $ret2 ne 0) {
         remove_grub_cmdline_settings("nospectre_v2");
-        remove_grub_cmdline_settings("spectre_v2=[a-z,].*");
+        remove_grub_cmdline_settings("spectre_v2=[a-z,]*");
         grub_mkconfig;
         reboot_and_wait(timeout => 70);
         assert_script_run('grep -v "nospectre_v2" /proc/cmdline');
@@ -202,7 +202,7 @@ sub post_fail_hook {
     select_console 'root-console';
     assert_script_run("md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload");
     remove_grub_cmdline_settings("nospectre_v2");
-    remove_grub_cmdline_settings('spectre_v2=.*[^"]');
+    remove_grub_cmdline_settings('spectre_v2=[a-z,]*');
     grub_mkconfig;
     upload_logs '/tmp/upload.tar.bz2';
     $self->SUPER::post_fail_hook;
