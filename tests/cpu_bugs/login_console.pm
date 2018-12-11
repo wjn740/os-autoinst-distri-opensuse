@@ -11,7 +11,6 @@
 # Summary:  ssh login
 # Maintainer: Joyce Na <jna@suse.de>
 
-
 package login_console;
 use base "y2logsstep";
 use strict;
@@ -20,13 +19,13 @@ use File::Basename;
 use testapi;
 use ipmi_backend_utils;
 
-
 sub login_to_console {
-    my ($self, $timeout) = @_;
+    my ( $self, $timeout ) = @_;
     $timeout = 80;
 
     select_console 'sol', await_console => 0;
-    if (check_screen('login_screen', $timeout)) {
+    if ( check_screen( 'login_screen', $timeout ) ) {
+
         #use console based on ssh to avoid unstable ipmi
         use_ssh_serial_console;
     }

@@ -8,7 +8,7 @@
 # notice and this notice are preserved.  This file is offered as-is,
 # without any warranty.
 
-# Summary: KVM Guest install under the mitigation enable/disable 
+# Summary: KVM Guest install under the mitigation enable/disable
 # Maintainer: James Wang <jnwang@suse.com>
 
 use cpu_bugs;
@@ -20,25 +20,49 @@ use strict;
 use testapi;
 use utils;
 
-
-my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
-my $name = get_var('VM_NAME');
-my $install_url = get_var('INSTALL_REPO');
+my $syspath      = '/sys/devices/system/cpu/vulnerabilities/';
+my $name         = get_var('VM_NAME');
+my $install_url  = get_var('INSTALL_REPO');
 my $logfile_path = get_var('VM_INST_LOG');
-my $cpu = get_var('CPU_FEATURE');
-my $vm_pool = get_var('VM_POOL');
-sub run {
-#remove old VM
-    assert_script_run('curl ' . data_url("cpu_bugs/vm_install_script/sle-15/remove_vm.sh") . ' -o remove_vm.sh', 60);
-    assert_script_run('chmod 755 remove_vm.sh');
-    script_run('./remove_vm.sh' . ' ' . $name);
+my $cpu          = get_var('CPU_FEATURE');
+my $vm_pool      = get_var('VM_POOL');
 
-    assert_script_run('curl ' . data_url("cpu_bugs/vm_install_script/sle-15/create_vm_url.sh") . ' -o install_vm.sh', 60);
+sub run {
+
+    #remove old VM
+    assert_script_run(
+        'curl '
+          . data_url("cpu_bugs/vm_install_script/sle-15/remove_vm.sh")
+          . ' -o remove_vm.sh',
+        60
+    );
+    assert_script_run('chmod 755 remove_vm.sh');
+    script_run( './remove_vm.sh' . ' ' . $name );
+
+    assert_script_run(
+        'curl '
+          . data_url("cpu_bugs/vm_install_script/sle-15/create_vm_url.sh")
+          . ' -o install_vm.sh',
+        60
+    );
     assert_script_run('chmod 755 install_vm.sh');
-    assert_script_run('./install_vm.sh' . ' ' . $name . ' ' . $install_url . ' ' . data_url("cpu_bugs/autoyast/SLE-15-SP0/sles-15-kvm-guest-autoyast.xml") . ' ' . $logfile_path . ' ' . $vm_pool . ' ' . $cpu, timeout => 3600);
-    script_run('(tail -f -n0 ' . $logfile_path . ' &) | grep -q "Welcome to SUSE"', 600);
-    script_run("virsh destroy $name", 600);
-    script_run("sync", 600);
+    assert_script_run(
+        './install_vm.sh' . ' '
+          . $name . ' '
+          . $install_url . ' '
+          . data_url(
+            "cpu_bugs/autoyast/SLE-15-SP0/sles-15-kvm-guest-autoyast.xml")
+          . ' '
+          . $logfile_path . ' '
+          . $vm_pool . ' '
+          . $cpu,
+        timeout => 3600
+    );
+    script_run(
+        '(tail -f -n0 ' . $logfile_path . ' &) | grep -q "Welcome to SUSE"',
+        600 );
+    script_run( "virsh destroy $name", 600 );
+    script_run( "sync",                600 );
     wait_idle(5);
     upload_logs $logfile_path;
     upload_logs 'remove_vm.sh';
@@ -46,15 +70,20 @@ sub run {
 }
 
 sub test_flags {
-    return {milestone => 1, fatal => 0};
+    return { milestone => 1, fatal => 0 };
 }
 
 sub post_fail_hook {
-    my ($self) = @_; 
+    my ($self) = @_;
     select_console 'root-console';
-    assert_script_run('curl ' . data_url("cpu_bugs/vm_install_script/sle-15/remove_vm.sh") . ' -o remove_vm.sh', 60);
+    assert_script_run(
+        'curl '
+          . data_url("cpu_bugs/vm_install_script/sle-15/remove_vm.sh")
+          . ' -o remove_vm.sh',
+        60
+    );
     assert_script_run('chmod 755 remove_vm.sh');
-    assert_script_run('./remove_vm.sh' . ' ' . $name);
+    assert_script_run( './remove_vm.sh' . ' ' . $name );
     upload_logs $logfile_path;
     $self->SUPER::post_fail_hook;
 }

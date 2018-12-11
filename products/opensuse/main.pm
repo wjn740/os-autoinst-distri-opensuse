@@ -358,7 +358,7 @@ elsif (get_var('CPU_BUGS')) {
         loadtest "cpu_bugs/login_console";
     }
     elsif (check_var('BACKEND', 'qemu')) {
-        boot_hdd_image;
+    	boot_hdd_image;
         loadtest "console/system_prepare";
         loadtest "console/consoletest_setup";
         loadtest "console/hostname";

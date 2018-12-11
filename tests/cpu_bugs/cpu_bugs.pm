@@ -20,11 +20,17 @@ use power_action_utils 'power_action';
 use ipmi_backend_utils;
 
 sub reboot_and_wait {
-    my ($self, $timeout) = @_;
-    power_action('reboot', textmode => 1, keepconsole => 1);
-    switch_from_ssh_to_sol_console(reset_console_flag => 'on');
-    check_screen('login_screen', $timeout);
-    use_ssh_serial_console;
+    my ( $self, $timeout ) = @_;
+    power_action( 'reboot', textmode => 1, keepconsole => 1 );
+    if ( check_var( 'BACKEND', 'ipmi' ) ) {
+        switch_from_ssh_to_sol_console( reset_console_flag => 'on' );
+        check_screen( 'login_screen', $timeout );
+        use_ssh_serial_console;
+    }
+    else {
+        $self->wait_boot( textmode => 1, ready_time => 300 );
+        select_console 'root-console';
+    }
 }
 
 1;
