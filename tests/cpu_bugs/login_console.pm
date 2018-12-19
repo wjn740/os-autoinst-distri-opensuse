@@ -19,19 +19,22 @@ use File::Basename;
 use testapi;
 use ipmi_backend_utils;
 
+my $login_timeout = get_var('LOGIN_TIMEOUT');
+
 sub login_to_console {
     my ( $self, $timeout ) = @_;
-    $timeout = 80;
+    $timeout = $login_timeout;
 
     select_console 'sol', await_console => 0;
     if ( check_screen( 'login_screen', $timeout ) ) {
-
         #use console based on ssh to avoid unstable ipmi
         use_ssh_serial_console;
     }
     else {
         use_ssh_serial_console;
     }
+    use_ssh_serial_console;
+
 
 }
 

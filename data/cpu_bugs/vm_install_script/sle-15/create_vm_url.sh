@@ -18,7 +18,7 @@ fi
 mkdir -pv $QCOW2POOL
 
 virt-install --name ${NAME} \
-    --disk path=$QCOW2POOL/"${NAME}.img",size=20,format=qcow2,bus=virtio,cache=none \
+    --disk path=$QCOW2POOL/"${NAME}.qcow2",size=20,format=qcow2,bus=virtio,cache=none \
     --os-variant sle15 \
     --noautoconsole \
     --wait=-1 \

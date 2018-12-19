@@ -54,7 +54,7 @@ sub run {
     if ( $ret ne 0 ) {
         remove_grub_cmdline_settings("l1tf=[a-z,]*");
         grub_mkconfig;
-        reboot_and_wait( $self, timeout => 70 );
+        reboot_and_wait( $self, 150 );
     }
 
     #check cpu flags.
@@ -99,7 +99,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
 
     #recheck the status of l1tf=off
     assert_script_run('cat /proc/cmdline');
@@ -136,7 +136,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
 
     #recheck the status of spec_store_bypass_disable=full
     assert_script_run('cat /proc/cmdline');
@@ -173,7 +173,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
 
     #recheck the status of l1tf=full,force
     assert_script_run('cat /proc/cmdline');
@@ -215,7 +215,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
 
     #recheck the status of l1tf=flush,nosmt
     assert_script_run('cat /proc/cmdline');
@@ -255,7 +255,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
 
     #recheck the status of l1tf=flush,nowarn
     assert_script_run('cat /proc/cmdline');
@@ -294,7 +294,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
 
     #recheck the status of l1tf=test
     assert_script_run('cat /proc/cmdline');
@@ -319,7 +319,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
 
     #check sysfs
     assert_script_run('cat /sys/module/kvm_intel/parameters/ept | grep "^N$"');

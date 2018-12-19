@@ -233,6 +233,24 @@
   <users config:type="list">
     <user>
       <encrypted config:type="boolean">false</encrypted>
+      <fullname>Bernhard M. Wiedemann</fullname>
+      <gid>100</gid>
+      <home>/home/bernhard</home>
+      <password_settings>
+        <expire/>
+        <flag/>
+        <inact>-1</inact>
+        <max>99999</max>
+        <min>0</min>
+        <warn>7</warn>
+      </password_settings>
+      <shell>/bin/bash</shell>
+      <uid>1000</uid>
+      <user_password>nots3cr3t</user_password>
+      <username>bernhard</username>
+    </user>
+    <user>
+      <encrypted config:type="boolean">false</encrypted>
       <fullname>root</fullname>
       <gid>0</gid>
       <home>/root</home>
@@ -246,7 +264,7 @@
       </password_settings>
       <shell>/bin/bash</shell>
       <uid>0</uid>
-      <user_password>susetesting</user_password>
+      <user_password>nots3cr3t</user_password>
       <username>root</username>
     </user>
   </users>

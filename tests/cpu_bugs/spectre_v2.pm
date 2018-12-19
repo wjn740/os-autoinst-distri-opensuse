@@ -58,7 +58,7 @@ sub run {
             remove_grub_cmdline_settings("nospectre_v2");
             remove_grub_cmdline_settings("spectre_v2=[a-z,]*");
             grub_mkconfig;
-            reboot_and_wait( $self, timeout => 70 );
+            reboot_and_wait( $self, 150 );
             assert_script_run('grep -v "nospectre_v2" /proc/cmdline');
             assert_script_run('grep -v "spectre_v2=off" /proc/cmdline');
         }
@@ -130,7 +130,7 @@ sub run {
         grub_mkconfig;
 
         #reboot and stand by
-        reboot_and_wait( $self, timeout => 70 );
+        reboot_and_wait( $self, 150 );
         record_info( 'IBRS start', "spectre_v2=ibrs start." );
 
         #recheck the status of spectre_v2=ibrs
@@ -176,7 +176,7 @@ sub run {
             remove_grub_cmdline_settings("nospectre_v2");
             remove_grub_cmdline_settings("spectre_v2=[a-z,]*");
             grub_mkconfig;
-            reboot_and_wait( $self, timeout => 70 );
+            reboot_and_wait( $self, 150 );
             assert_script_run('grep -v "nospectre_v2" /proc/cmdline');
             assert_script_run('grep -v "spectre_v2=off" /proc/cmdline');
         }
@@ -212,7 +212,7 @@ sub run {
         grub_mkconfig;
 
         #reboot and stand by
-        reboot_and_wait( $self, timeout => 70 );
+        reboot_and_wait( $self, 150 );
         record_info( 'IBRS start', "spectre_v2=ibrs start." );
 
         #recheck the status of spectre_v2=ibrs
@@ -251,7 +251,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
     record_info( 'off start', "spectre_v2=off start." );
 
     #recheck the status of spectre_v2=off
@@ -278,7 +278,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
     record_info( 'retpoline start', "spectre_v2=retpoline start." );
 
     #recheck the status of spectre_v2=retpoline
@@ -309,7 +309,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
     record_info( 'retpoline,generic start',
         "spectre_v2=retpoline,generic start." );
 
@@ -343,7 +343,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
     record_info( 'spectre_v2=retpoline,amd start',
         "spectre_v2=retpoline,amd start." );
 

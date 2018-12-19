@@ -32,7 +32,7 @@ sub run {
     if ( $ret ne 0 ) {
         remove_grub_cmdline_settings("pti=[a-z]*");
         grub_mkconfig;
-        reboot_and_wait( $self, timeout => 70 );
+        reboot_and_wait( $self, 150 );
         assert_script_run('grep -v "pti=off" /proc/cmdline');
     }
 
@@ -52,7 +52,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
 
     #recheck the status of pti=off
     assert_script_run('cat /proc/cmdline');
@@ -80,7 +80,7 @@ sub run {
     grub_mkconfig;
 
     #reboot and stand by
-    reboot_and_wait( $self, timeout => 70 );
+    reboot_and_wait( $self, 150 );
 
     #recheck the status of pti=auto
     assert_script_run('cat /proc/cmdline');

@@ -32,6 +32,8 @@ my $source_host  = get_var("SOURCE_HOSTNAME");
 my $dest_host    = get_var("DEST_HOSTNAME");
 
 sub run {
+    zypper_call("in libvirt-client");
+
     if ( get_var("MIGRATION_HOST") ) {
         my $children = get_children();
         my $child_id = ( keys %$children )[0];

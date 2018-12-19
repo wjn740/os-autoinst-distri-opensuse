@@ -26,8 +26,9 @@ my $install_url  = get_var('INSTALL_REPO');
 my $logfile_path = get_var('VM_INST_LOG');
 my $cpu          = get_var('CPU_FEATURE');
 my $vm_pool      = get_var('VM_POOL');
-
+my $autoyast     = get_var('AUTOYAST');
 sub run {
+    zypper_call("in libvirt-client");
 
     #remove old VM
     assert_script_run(
@@ -50,8 +51,7 @@ sub run {
         './install_vm.sh' . ' '
           . $name . ' '
           . $install_url . ' '
-          . data_url(
-            "cpu_bugs/autoyast/SLE-15-SP0/sles-15-kvm-guest-autoyast.xml")
+          . data_url($autoyast)
           . ' '
           . $logfile_path . ' '
           . $vm_pool . ' '

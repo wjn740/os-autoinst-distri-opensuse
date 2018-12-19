@@ -55,7 +55,7 @@ sub run {
             remove_grub_cmdline_settings("nospec_store_bypass_disable");
             remove_grub_cmdline_settings("spec_store_bypass_disable=[a-z,]*");
             grub_mkconfig;
-            reboot_and_wait( $self, timeout => 70 );
+            reboot_and_wait( $self, 150 );
         }
 
         #check cpu flags
@@ -82,7 +82,7 @@ sub run {
         grub_mkconfig;
 
         #reboot and stand by
-        reboot_and_wait( $self, timeout => 70 );
+        reboot_and_wait( $self, 150 );
 
         #recheck the status of spec_store_bypass_disable=off
         assert_script_run('cat /proc/cmdline');
@@ -106,7 +106,7 @@ sub run {
         grub_mkconfig;
 
         #reboot and stand by
-        reboot_and_wait( $self, timeout => 70 );
+        reboot_and_wait( $self, 150 );
 
         #recheck the status of spec_store_bypass_disable=auto
         assert_script_run('cat /proc/cmdline');
@@ -145,7 +145,7 @@ sub run {
         grub_mkconfig;
 
         #reboot and stand by
-        reboot_and_wait( $self, timeout => 70 );
+        reboot_and_wait( $self, 150 );
 
         #recheck the status of spec_store_bypass_disable=prctl
         assert_script_run('cat /proc/cmdline');
@@ -177,7 +177,7 @@ sub run {
         grub_mkconfig;
 
         #reboot and stand by
-        reboot_and_wait( $self, timeout => 70 );
+        reboot_and_wait( $self, 150 );
 
         #recheck the status of spec_store_bypass_disable=seccomp
         assert_script_run('cat /proc/cmdline');
@@ -209,7 +209,7 @@ sub run {
         grub_mkconfig;
 
         #reboot and stand by
-        reboot_and_wait( $self, timeout => 70 );
+        reboot_and_wait( $self, 150 );
 
         #recheck the status of spec_store_bypass_disable=test
         assert_script_run('cat /proc/cmdline');
