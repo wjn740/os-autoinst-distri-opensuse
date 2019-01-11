@@ -2,7 +2,7 @@
 <!DOCTYPE profile>
 <profile xmlns="http://www.suse.com/1.0/yast2ns" xmlns:config="http://www.suse.com/1.0/configns">
   <add-on>
-    <add_on_products config:type="list"/>
+    <add_on_products config:type="list">
       <listentry>
         <accept_file_without_checksum config:type="boolean">true</accept_file_without_checksum>
         <accept_non_trusted_gpg_key config:type="boolean">true</accept_non_trusted_gpg_key>
@@ -11,10 +11,59 @@
         <accept_verification_failed config:type="boolean">true</accept_verification_failed>
         <ask_on_error config:type="boolean">false</ask_on_error>
         <import_gpg_key config:type="boolean">true</import_gpg_key>
-        <media_url>http://download.suse.de/ibs/SUSE/Updates/SLE-SERVER/12-SP4/x86_64/update/</media_url>
-        <product>update</product>
+        <media_url>http://mirror.bej.suse.com/dist/install/SLP/SLE-15-SP1-Module-Basesystem-LATEST/x86_64/DVD1/</media_url>
+        <product>sle-module-basesystem</product>
         <product_dir>/</product_dir>
       </listentry>
+      <listentry>
+        <accept_file_without_checksum config:type="boolean">true</accept_file_without_checksum>
+        <accept_non_trusted_gpg_key config:type="boolean">true</accept_non_trusted_gpg_key>
+        <accept_unknown_gpg_key config:type="boolean">true</accept_unknown_gpg_key>
+        <accept_unsigned_file config:type="boolean">true</accept_unsigned_file>
+        <accept_verification_failed config:type="boolean">true</accept_verification_failed>
+        <ask_on_error config:type="boolean">false</ask_on_error>
+        <import_gpg_key config:type="boolean">true</import_gpg_key>
+        <media_url>http://mirror.bej.suse.com/dist/install/SLP/SLE-15-SP1-Module-Desktop-Applications-LATEST/x86_64/DVD1/</media_url>
+        <product>sle-module-desktop-applications</product>
+        <product_dir>/</product_dir>
+      </listentry>
+      <listentry>
+        <accept_file_without_checksum config:type="boolean">true</accept_file_without_checksum>
+        <accept_non_trusted_gpg_key config:type="boolean">true</accept_non_trusted_gpg_key>
+        <accept_unknown_gpg_key config:type="boolean">true</accept_unknown_gpg_key>
+        <accept_unsigned_file config:type="boolean">true</accept_unsigned_file>
+        <accept_verification_failed config:type="boolean">true</accept_verification_failed>
+        <ask_on_error config:type="boolean">false</ask_on_error>
+        <import_gpg_key config:type="boolean">true</import_gpg_key>
+        <media_url>http://mirror.bej.suse.com/dist/install/SLP/SLE-15-SP1-Module-Legacy-LATEST/x86_64/DVD1/</media_url>
+        <product>sle-module-legacy</product>
+        <product_dir>/</product_dir>
+      </listentry>
+      <listentry>
+        <accept_file_without_checksum config:type="boolean">true</accept_file_without_checksum>
+        <accept_non_trusted_gpg_key config:type="boolean">true</accept_non_trusted_gpg_key>
+        <accept_unknown_gpg_key config:type="boolean">true</accept_unknown_gpg_key>
+        <accept_unsigned_file config:type="boolean">true</accept_unsigned_file>
+        <accept_verification_failed config:type="boolean">true</accept_verification_failed>
+        <ask_on_error config:type="boolean">false</ask_on_error>
+        <import_gpg_key config:type="boolean">true</import_gpg_key>
+        <media_url>http://mirror.bej.suse.com/dist/install/SLP/SLE-15-SP1-Module-Server-Applications-LATEST/x86_64/DVD1/</media_url>
+        <product>sle-module-server-applications</product>
+        <product_dir>/</product_dir>
+      </listentry>
+      <listentry>
+        <accept_file_without_checksum config:type="boolean">true</accept_file_without_checksum>
+        <accept_non_trusted_gpg_key config:type="boolean">true</accept_non_trusted_gpg_key>
+        <accept_unknown_gpg_key config:type="boolean">true</accept_unknown_gpg_key>
+        <accept_unsigned_file config:type="boolean">true</accept_unsigned_file>
+        <accept_verification_failed config:type="boolean">true</accept_verification_failed>
+        <ask_on_error config:type="boolean">false</ask_on_error>
+        <import_gpg_key config:type="boolean">true</import_gpg_key>
+        <media_url>http://mirror.bej.suse.com/dist/install/SLP/SLE-15-SP1-Module-Web-Scripting-LATEST/x86_64/DVD1/</media_url>
+        <product>sle-module-web-scripting</product>
+        <product_dir>/</product_dir>
+      </listentry>
+    </add_on_products>
   </add-on>
   <deploy_image>
     <image_installation config:type="boolean">false</image_installation>
@@ -52,7 +101,6 @@
     <language>en_US</language>
     <languages/>
   </language>
-  <login_settings/>
   <report>
     <errors>
       <log config:type="boolean">true</log>
@@ -76,7 +124,7 @@
     </yesno_messages>
   </report>
   <services-manager>
-    <default_target>multi-user</default_target>
+    <default_target>textmode</default_target>
     <services>
       <disable config:type="list"/>
       <enable config:type="list">
@@ -85,12 +133,14 @@
     </services>
   </services-manager>
   <software>
-    <image/>
-    <instsource/>
+    <products config:type="list">
+        <product>SLES</product>
+    </products>
     <patterns config:type="list">
-      <pattern>Minimal</pattern>
       <pattern>32bit</pattern>
+      <pattern>minimal_base</pattern>
       <pattern>base</pattern>
+      <pattern>documentation</pattern>
     </patterns>
     <packages config:type="list">
       <package>autoyast2</package>

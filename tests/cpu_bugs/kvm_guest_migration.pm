@@ -28,28 +28,76 @@ my $install_url  = get_var('INSTALL_REPO');
 my $logfile_path = get_var('VM_INST_LOG');
 my $cpu          = get_var('CPU_FEATURE');
 my $vm_pool      = get_var('VM_POOL');
+my $vm_shares      = get_var('VM_SHARES');
 my $source_host  = get_var("SOURCE_HOSTNAME");
 my $dest_host    = get_var("DEST_HOSTNAME");
+my $subname      = "";
+my $cpu_1        = "";
+
+
+sub check_working_status{
+    return script_run("grep \'^1\$\' ${vm_pool}/flag");
+}
+sub check_idle_status{
+    return script_run("grep \'^0\$\' ${vm_pool}/flag");
+}
+sub goto_work{
+    assert_script_run("echo \"1\" > ${vm_pool}/flag;sync ${vm_pool}/flag");
+}
+sub jobs_done{
+    assert_script_run("echo \"0\" > ${vm_pool}/flag;sync ${vm_pool}/flag");
+}
+sub remove_old_vm {
+    assert_script_run(
+        'curl '
+          . data_url("cpu_bugs/vm_install_script/sle-15/remove_vm.sh")
+          . ' -o remove_vm.sh',
+        60
+    );
+    assert_script_run('chmod 755 remove_vm.sh');
+    script_run( './remove_vm.sh' . ' ' . $name . '-' . $subname );
+}
+
+sub create_new_vm {
+    assert_script_run(
+"qemu-img create -f qcow2 -b ${vm_pool}/${name}.qcow2 ${vm_pool}/${name}-${subname}.qcow2"
+    );
+    assert_script_run(
+"chmod 666 ${vm_pool}/${name}-${subname}.qcow2"
+    );
+    assert_script_run(
+        'curl '
+          . data_url(
+            "cpu_bugs/vm_install_script/sle-15/create_vm_with_exist_disk.sh")
+          . ' -o create_vm_with_exist_disk.sh',
+        60
+    );
+    assert_script_run('chmod 755 create_vm_with_exist_disk.sh');
+    assert_script_run(
+"./create_vm_with_exist_disk.sh ${name}  ${subname}  ${vm_pool} ${cpu_1}"
+    );
+
+}
 
 sub run {
+    script_run("aa-teardown");
     zypper_call("in libvirt-client");
-
+    zypper_call("in qemu-kvm");
+    zypper_call("in -t pattern kvm_server kvm_tools");
+    assert_script_run("mkdir -pv $vm_shares");
+    assert_script_run("mkdir -pv $vm_pool");
     if ( get_var("MIGRATION_HOST") ) {
+    	mutex_create "flag_lock";
         my $children = get_children();
         my $child_id = ( keys %$children )[0];
         assert_script_run("cp /etc/exports{,.bak}");
         assert_script_run(
-            "sed -i \"/^" . "\\" . ${vm_pool} . "/d\" /etc/exports" );
-        assert_script_run(
-            "virsh start $name",
-            fail_message =>
-"You need run install testcase to setup a KVM guest for migration."
-        );
+            "sed -i \"/^" . "\\" . ${vm_shares} . "/d\" /etc/exports" );
 
         #setup NFS and release a lock to notice client side
         zypper_call("in nfs-kernel-server");
         assert_script_run(
-            "echo \"$vm_pool    *(rw,sync,no_root_squash)\" >>/etc/exports");
+            "echo \"$vm_shares *(rw,sync,no_root_squash)\" >>/etc/exports");
         systemctl("restart nfs-server.service");
         mutex_create 'nfs_server_ready';
 
@@ -57,15 +105,10 @@ sub run {
         mutex_wait( 'dest_host_ready', $child_id );
 
         #Do migrate
-        assert_script_run(
-            "virsh migrate --live $name --verbose qemu+tcp://$dest_host/system"
-        );
-        assert_script_run("virsh list | grep -v \"$name\"");
-        assert_script_run("virsh list --all | grep \"${name}.*shut off\"");
-        mutex_create 'migrate_done';
+        assert_script_run("mount $source_host:$vm_shares $vm_pool");
+	#Inital task
+	jobs_done();
 
-        #cleanup
-        assert_script_run("cp /etc/exports{.bak,}");
     }
     elsif ( get_var("MIGRATION_DEST") ) {
 
@@ -81,19 +124,77 @@ sub run {
 
         #wait server side is ready
         mutex_lock 'nfs_server_ready';
+
         zypper_call("in nfs-client");
         assert_script_run("mkdir -pv $vm_pool");
-        assert_script_run("mount $source_host:$vm_pool $vm_pool");
+        assert_script_run("mount $source_host:$vm_shares $vm_pool");
 
-        #tell server side client is ready
         mutex_create 'dest_host_ready';
 
-        #waiting migrate until finish
-        mutex_lock 'migrate_done';
-        assert_script_run("virsh list | grep $name");
+    }
 
+    for my $c ( split /,/, $cpu ) {
+        ${cpu_1} = $c;
+        $subname =
+          script_output("echo ${cpu_1} | sha1sum | awk \'{print \$1}\'");
+        while (1) {
+            mutex_lock "flag_lock";
+            if ( check_idle_status() == 0 ) {
+                if ( get_var("MIGRATION_HOST") ) {
+                    remove_old_vm();
+                    create_new_vm();
+                    assert_script_run(
+                        "virsh start $name-$subname",
+                        fail_message =>
+"You need run install testcase to setup a KVM guest for migration."
+                    );
+                    assert_script_run(
+"virsh migrate --live $name-$subname --verbose qemu+tcp://$dest_host/system"
+                    );
+
+                    assert_script_run(
+                        "virsh list | grep -v \"$name-$subname\"");
+                    assert_script_run(
+                        "virsh list --all | grep \"${name}-$subname.*shut off\""
+                    );
+		    goto_work();
+		    mutex_unlock "flag_lock";
+		    last;
+
+                }
+                else {
+		    mutex_unlock "flag_lock";
+                    wait_idle(10);
+                    next;
+                }
+            }
+            if ( check_working_status() == 0) {
+                if ( get_var("MIGRATION_HOST") ) {
+		    mutex_unlock "flag_lock";
+                    wait_idle(10);
+                    next;
+                }
+                else {
+                    #waiting migrate until finish
+                    assert_script_run("virsh list | grep $name-$subname");
+                    assert_script_run("virsh destroy $name-$subname");
+		    jobs_done();
+		    mutex_unlock "flag_lock";
+                    wait_idle(10);
+                    last;
+                }
+            }
+	    mutex_unlock "flag_lock";
+            wait_idle(10);
+        }
+    }
+
+    if ( get_var("MIGRATION_DEST") ) {
         #cleanup
         assert_script_run("cp /etc/libvirt/libvirtd.conf{.bak,}");
+    }
+    if ( get_var("MIGRATION_HOST") ) {
+        assert_script_run("cp /etc/exports{.bak,}");
     }
 }
 
@@ -114,6 +215,8 @@ sub post_fail_hook {
     }
     assert_script_run('virsh list > /tmp/virsh_list.log');
     upload_logs("/tmp/virsh_list.log");
+    upload_logs("/var/log/libvirt/qemu/${name}-${subname}.log");
+    upload_logs("/var/log/libvirt/qemu/${name}-${subname}.log");
     $self->SUPER::post_fail_hook;
 }
 

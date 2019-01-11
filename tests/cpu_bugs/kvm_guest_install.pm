@@ -24,12 +24,13 @@ my $syspath      = '/sys/devices/system/cpu/vulnerabilities/';
 my $name         = get_var('VM_NAME');
 my $install_url  = get_var('INSTALL_REPO');
 my $logfile_path = get_var('VM_INST_LOG');
-my $cpu          = get_var('CPU_FEATURE');
-my $vm_pool      = get_var('VM_POOL');
-my $autoyast     = get_var('AUTOYAST');
+my $vm_shares    = get_var('VM_SHARES');
+my $autoyast     = get_var('QA_AUTOYAST');
 sub run {
     zypper_call("in libvirt-client");
 
+    script_run( "mkdir -pv ${vm_shares}" );
+    
     #remove old VM
     assert_script_run(
         'curl '
@@ -39,6 +40,7 @@ sub run {
     );
     assert_script_run('chmod 755 remove_vm.sh');
     script_run( './remove_vm.sh' . ' ' . $name );
+    script_run( "rm ${vm_shares}/$name*" );
 
     assert_script_run(
         'curl '
@@ -54,8 +56,7 @@ sub run {
           . data_url($autoyast)
           . ' '
           . $logfile_path . ' '
-          . $vm_pool . ' '
-          . $cpu,
+          . $vm_shares . ' ',
         timeout => 3600
     );
     script_run(
@@ -63,6 +64,10 @@ sub run {
         600 );
     script_run( "virsh destroy $name", 600 );
     script_run( "sync",                600 );
+    if (script_run("systemctl --all | grep \"apparmor\" | awk \'{print \$3}\' | grep '^not-found\$'") == 1) {
+	    systemctl("disable apparmor");
+	    systemctl("stop apparmor");
+    }
     wait_idle(5);
     upload_logs $logfile_path;
     upload_logs 'remove_vm.sh';
