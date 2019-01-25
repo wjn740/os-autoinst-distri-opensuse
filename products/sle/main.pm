@@ -751,13 +751,16 @@ elsif (get_var('CPU_BUGS')) {
     	}
     }
     if (get_var('IPMI_TO_QEMU')) {
-    loadtest "cpu_bugs/ipmi_to_qemu"
+    	loadtest "cpu_bugs/ipmi_to_qemu"
     }
     if (get_var('MELTDOWN')) {
         loadtest "cpu_bugs/meltdown";
     }
     if (get_var('SPECTRE_V2')) {
         loadtest "cpu_bugs/spectre_v2";
+    }
+    if (get_var('SPECTRE_V2_USER')) {
+        loadtest "cpu_bugs/spectre_v2_user";
     }
     if (get_var('SPECTRE_V4')) {
         loadtest "cpu_bugs/spectre_v4";

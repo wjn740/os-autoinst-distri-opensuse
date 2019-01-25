@@ -54,9 +54,11 @@ sub run {
         assert_script_run('cat /proc/cmdline');
         my $ret1 = script_run('grep -v "nospectre_v2" /proc/cmdline');
         my $ret2 = script_run('grep -v "spectre_v2=[a-z,]*" /proc/cmdline');
-        if ( $ret1 ne 0 or $ret2 ne 0 ) {
+        my $ret3 = script_run('grep -v "spectre_v2_user=[a-z,]*" /proc/cmdline');
+        if ( $ret1 ne 0 or $ret2 ne 0 or $ret3 ne 0 ) {
             remove_grub_cmdline_settings("nospectre_v2");
             remove_grub_cmdline_settings("spectre_v2=[a-z,]*");
+            remove_grub_cmdline_settings("spectre_v2_user=[a-z,]*");
             grub_mkconfig;
             reboot_and_wait( $self, 150 );
             assert_script_run('grep -v "nospectre_v2" /proc/cmdline');
@@ -94,7 +96,7 @@ sub run {
                 assert_script_run(
                     'dmesg | grep "Filling RSB on context switch"');
                 assert_script_run(
-                    'dmesg | grep "Enabling Indirect Branch Prediction Barrier"'
+                    'dmesg | grep "Enabling conditional Indirect Branch Prediction Barrier"'
                 );
                 assert_script_run(
 'dmesg | grep "Enabling Restricted Speculation for firmware calls"'
@@ -114,7 +116,7 @@ sub run {
                 assert_script_run(
                     'dmesg | grep "Filling RSB on context switch"');
                 assert_script_run(
-                    'dmesg | grep "Enabling Indirect Branch Prediction Barrier"'
+                    'dmesg | grep "Enabling conditional Indirect Branch Prediction Barrier"'
                 );
                 assert_script_run(
 'dmesg | grep "Enabling Restricted Speculation for firmware calls"'
@@ -161,7 +163,7 @@ sub run {
         );
         assert_script_run('dmesg | grep "Filling RSB on context switch"');
         assert_script_run(
-            'dmesg | grep "Enabling Indirect Branch Prediction Barrier"');
+            'dmesg | grep "Enabling conditional Indirect Branch Prediction Barrier"');
         assert_script_run(
             'dmesg | grep "Enabling Restricted Speculation for firmware calls"'
         );
@@ -200,7 +202,7 @@ sub run {
 #		assert_script_run('dmesg | grep "Retpolines enabled, force-disabling IBRS due to \!SKL-era core"');
         assert_script_run('dmesg | grep "Filling RSB on context switch"');
         assert_script_run(
-            'dmesg | grep -v "Enabling Indirect Branch Prediction Barrier"');
+            'dmesg | grep -v "Enabling conditional Indirect Branch Prediction Barrier"');
         assert_script_run(
 'dmesg | grep -v "Enabling Restricted Speculation for firmware calls"'
         );
@@ -240,7 +242,7 @@ sub run {
         );
         assert_script_run('dmesg | grep "Filling RSB on context switch"');
         assert_script_run(
-            'dmesg | grep -v "Enabling Indirect Branch Prediction Barrier"');
+            'dmesg | grep -v "Enabling conditional Indirect Branch Prediction Barrier"');
         assert_script_run(
 'dmesg | grep -v "Enabling Restricted Speculation for firmware calls"'
         );
@@ -266,7 +268,7 @@ sub run {
     #check sysfs
     assert_script_run( 'cat ' . $syspath . 'spectre_v2' );
     assert_script_run(
-        'cat ' . $syspath . 'spectre_v2' . '| grep "^Vulnerable$"' );
+        'cat ' . $syspath . 'spectre_v2' . '| grep "^Vulnerable,.*IBPB: disabled,.*STIBP: disabled$"' );
 
     #chech dmesg
     assert_script_run('dmesg | grep -v "Spectre V2"');
@@ -299,7 +301,7 @@ sub run {
     assert_script_run('dmesg | grep "retpoline selected on command line."');
     assert_script_run('dmesg | grep "Filling RSB on context switch"');
     assert_script_run(
-        'dmesg | grep "Enabling Indirect Branch Prediction Barrier"');
+        'dmesg | grep "Enabling conditional Indirect Branch Prediction Barrier"');
     assert_script_run(
         'dmesg | grep "Enabling Restricted Speculation for firmware calls"');
     remove_grub_cmdline_settings("spectre_v2=retpoline");
@@ -332,7 +334,7 @@ sub run {
         'dmesg | grep "retpoline,generic selected on command line."');
     assert_script_run('dmesg | grep "Filling RSB on context switch"');
     assert_script_run(
-        'dmesg | grep "Enabling Indirect Branch Prediction Barrier"');
+        'dmesg | grep "Enabling conditional Indirect Branch Prediction Barrier"');
     assert_script_run(
         'dmesg | grep "Enabling Restricted Speculation for firmware calls"');
     remove_grub_cmdline_settings("spectre_v2=retpoline,generic");
@@ -376,7 +378,7 @@ sub run {
     }
     assert_script_run('dmesg | grep "Filling RSB on context switch"');
     assert_script_run(
-        'dmesg | grep "Enabling Indirect Branch Prediction Barrier"');
+        'dmesg | grep "Enabling conditional Indirect Branch Prediction Barrier"');
     assert_script_run(
         'dmesg | grep "Enabling Restricted Speculation for firmware calls"');
     remove_grub_cmdline_settings("spectre_v2=retpoline,amd");
@@ -396,6 +398,7 @@ sub post_fail_hook {
     );
     remove_grub_cmdline_settings("nospectre_v2");
     remove_grub_cmdline_settings('spectre_v2=[a-z,]*');
+    remove_grub_cmdline_settings('spectre_v2_user=[a-z,]*');
     grub_mkconfig;
     upload_logs '/tmp/upload.tar.bz2';
     $self->SUPER::post_fail_hook;

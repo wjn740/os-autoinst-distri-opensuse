@@ -124,7 +124,7 @@
     </yesno_messages>
   </report>
   <services-manager>
-    <default_target>textmode</default_target>
+    <default_target>multi-user</default_target>
     <services>
       <disable config:type="list"/>
       <enable config:type="list">
@@ -156,7 +156,7 @@
     </packages>
   </software>
   <timezone>
-    <hwclock>CST</hwclock>
+    <hwclock>UTC</hwclock>
     <timezone>Asia/Beijing</timezone>
   </timezone>
   <user_defaults>

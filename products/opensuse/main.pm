@@ -369,6 +369,9 @@ elsif (get_var('CPU_BUGS')) {
     if (get_var('SPECTRE_V2')) {
         loadtest "cpu_bugs/spectre_v2";
     }
+    if (get_var('SPECTRE_V2_USER')) {
+        loadtest "cpu_bugs/spectre_v2_user";
+    }
     if (get_var('SPECTRE_V4')) {
         loadtest "cpu_bugs/spectre_v4";
     }

@@ -26,10 +26,27 @@ my $install_url  = get_var('INSTALL_REPO');
 my $logfile_path = get_var('VM_INST_LOG');
 my $vm_shares    = get_var('VM_SHARES');
 my $autoyast     = get_var('QA_AUTOYAST');
+my $netdevice    = get_var('SUT_NETDEVICE');
 sub run {
-    zypper_call("in libvirt-client");
+    script_run("aa-teardown");
+    zypper_call("in -t pattern kvm_server kvm_tools");
 
     script_run( "mkdir -pv ${vm_shares}" );
+
+    assert_script_run(
+        'curl '
+          . data_url("cpu_bugs/network-bridge/ifcfg-br0")
+          . ' -o /etc/sysconfig/network/ifcfg-br0',
+        60
+    );
+    assert_script_run(
+        'curl '
+          . data_url("cpu_bugs/network-bridge/ifcfg-eth0")
+          . ' -o /etc/sysconfig/network/ifcfg-'${netdevice},
+        60
+    );
+
+    systemctl("restart wicked.service");
     
     #remove old VM
     assert_script_run(
