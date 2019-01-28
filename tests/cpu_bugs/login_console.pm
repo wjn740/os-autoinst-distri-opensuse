@@ -18,6 +18,7 @@ use warnings;
 use File::Basename;
 use testapi;
 use ipmi_backend_utils;
+use Utils::Backends 'use_ssh_serial_console';
 
 my $login_timeout = get_var('LOGIN_TIMEOUT');
 

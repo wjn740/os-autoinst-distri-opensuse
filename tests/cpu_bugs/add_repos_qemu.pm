@@ -23,11 +23,13 @@ my $cliect_ini_url = get_var('CLIENT_INI');
 my $worker_ini_url = get_var('WORKER_INI');
 my $addonurl_hpc = get_var('ADDONURL_HPC');
 my $addonurl_sdk = get_var('ADDONURL_SDK');
+my $addonurl_script = get_var('ADDONURL_SCRIPT');
 sub run {
 	my $self = shift;
 	if(is_sle(">=15")) {
 		zypper_call("ar $addonurl_hpc hpc");
 		zypper_call("ar $addonurl_sdk sdk");
+		zypper_call("ar $addonurl_script ws");
 	}
         script_run("zypper -n --gpg-auto-import-keys ref");
 

@@ -18,6 +18,8 @@ use testapi;
 use utils;
 use power_action_utils 'power_action';
 use ipmi_backend_utils;
+use Utils::Backends 'use_ssh_serial_console';
+
 
 sub reboot_and_wait {
     my ( $self, $timeout ) = @_;

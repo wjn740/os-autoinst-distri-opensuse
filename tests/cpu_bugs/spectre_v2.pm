@@ -24,7 +24,7 @@ my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 
 sub run {
     my $self = shift;
-    my $supported;
+    my $supported = 2;
     select_console 'root-console';
 
     zypper_call("in cpuid");
@@ -48,7 +48,7 @@ sub run {
     my $cpu_family = script_output(
 'cat /proc/cpuinfo | grep "^cpu family[[:blank:]]*\:" | head -1 | awk -F \':\' \'{print $2}\''
     );
-    if ($supported) {
+    if ($supported eq 1) {
 
         #check default status
         assert_script_run('cat /proc/cmdline');
@@ -167,86 +167,6 @@ sub run {
         assert_script_run(
             'dmesg | grep "Enabling Restricted Speculation for firmware calls"'
         );
-    }
-    elsif ( $supported eq 0 ) {
-
-        #check default status
-        assert_script_run('cat /proc/cmdline');
-        my $ret1 = script_run('grep -v "nospectre_v2" /proc/cmdline');
-        my $ret2 = script_run('grep -v "spectre_v2=[a-z,]*" /proc/cmdline');
-        if ( $ret1 ne 0 or $ret2 ne 0 ) {
-            remove_grub_cmdline_settings("nospectre_v2");
-            remove_grub_cmdline_settings("spectre_v2=[a-z,]*");
-            grub_mkconfig;
-            reboot_and_wait( $self, 150 );
-            assert_script_run('grep -v "nospectre_v2" /proc/cmdline');
-            assert_script_run('grep -v "spectre_v2=off" /proc/cmdline');
-        }
-
-        #check cpu flags.
-        #Processor platform support these feature, whatever this is a VM or PM.
-        assert_script_run('cat /proc/cpuinfo');
-        assert_script_run('lscpu');
-        assert_script_run('lscpu | grep -v "^Flags.*ibrs.*"');
-        assert_script_run('lscpu | grep -v "^Flags.*ibpb.*"');
-
-        #check status of IBRS
-        record_info( 'Unsupport IBRS', "Hardware doesn't support IBRS" );
-        assert_script_run( "echo cpuinfo->model: " . $cpu_model );
-        assert_script_run( 'cat '
-              . $syspath
-              . 'spectre_v2'
-              . '| grep "^Mitigation: Full generic retpoline.*"' );
-
-#TODO on openSUSE-Leap 42.3 we still need check the following code.
-#		assert_script_run('dmesg | grep "Retpolines enabled, force-disabling IBRS due to \!SKL-era core"');
-        assert_script_run('dmesg | grep "Filling RSB on context switch"');
-        assert_script_run(
-            'dmesg | grep -v "Enabling conditional Indirect Branch Prediction Barrier"');
-        assert_script_run(
-'dmesg | grep -v "Enabling Restricted Speculation for firmware calls"'
-        );
-
-        record_info( 'Unsupport IBRS mode', "spectre_v2 default mode finish." );
-
-        #add spectre_v2=ibrs parameter to disable spectre_v2 mitigation
-        add_grub_cmdline_settings("spectre_v2=ibrs");
-        grub_mkconfig;
-
-        #reboot and stand by
-        reboot_and_wait( $self, 150 );
-        record_info( 'IBRS start', "spectre_v2=ibrs start." );
-
-        #recheck the status of spectre_v2=ibrs
-        assert_script_run('cat /proc/cmdline');
-        assert_script_run('grep "spectre_v2=ibrs" /proc/cmdline');
-
-        #check cpu flags
-        assert_script_run('cat /proc/cpuinfo');
-        assert_script_run('grep -v "^flags.*ibrs.*" /proc/cpuinfo');
-        assert_script_run('grep -v "^flags.*ibpb.*" /proc/cpuinfo');
-
-        #check sysfs
-        assert_script_run( 'cat ' . $syspath . 'spectre_v2' );
-        assert_script_run(
-            'cat ' . $syspath . 'spectre_v2' . '| grep "^Vulnerable$"' );
-
-        #chech dmesg
-        record_info( 'IBRS finish', "spectre_v2=ibrs finish and PASS." );
-        remove_grub_cmdline_settings("spectre_v2=ibrs");
-        record_info( 'Unsupport IBRS mode', "spectre_v2 IBRS mode finish." );
-        assert_script_run( 'cat '
-              . $syspath
-              . 'spectre_v2'
-              . '| grep "^Mitigation: Indirect Branch Restricted Speculation.*"'
-        );
-        assert_script_run('dmesg | grep "Filling RSB on context switch"');
-        assert_script_run(
-            'dmesg | grep -v "Enabling conditional Indirect Branch Prediction Barrier"');
-        assert_script_run(
-'dmesg | grep -v "Enabling Restricted Speculation for firmware calls"'
-        );
-    }
 
     #add spectre_v2=off parameter to disable spectre_v2 mitigation
     add_grub_cmdline_settings("spectre_v2=off");
@@ -383,6 +303,79 @@ sub run {
         'dmesg | grep "Enabling Restricted Speculation for firmware calls"');
     remove_grub_cmdline_settings("spectre_v2=retpoline,amd");
     record_info( 'retpoline,amd PASS', "spectre_v2=retpoline,amd PASS." );
+    }
+    elsif ( $supported eq 0 ) {
+
+        #check default status
+        assert_script_run('cat /proc/cmdline');
+        my $ret1 = script_run('grep -v "nospectre_v2" /proc/cmdline');
+        my $ret2 = script_run('grep -v "spectre_v2=[a-z,]*" /proc/cmdline');
+        my $ret3 = script_run('grep -v "spectre_v2_off=[a-z,]*" /proc/cmdline');
+        if ( $ret1 ne 0 or $ret2 ne 0 or $ret3 ne 0 ) {
+            remove_grub_cmdline_settings("nospectre_v2");
+            remove_grub_cmdline_settings("spectre_v2=[a-z,]*");
+            remove_grub_cmdline_settings("spectre_v2_user=[a-z,]*");
+            grub_mkconfig;
+            reboot_and_wait( $self, 150 );
+            assert_script_run('grep -v "nospectre_v2" /proc/cmdline');
+            assert_script_run('grep -v "spectre_v2=off" /proc/cmdline');
+        }
+
+        #check cpu flags.
+        #Processor platform support these feature, whatever this is a VM or PM.
+        assert_script_run('cat /proc/cpuinfo');
+        assert_script_run('lscpu');
+        assert_script_run('lscpu | grep -v "^Flags.*ibrs.*"');
+        assert_script_run('lscpu | grep -v "^Flags.*ibpb.*"');
+
+        #check status of IBRS
+        record_info( 'Unsupport IBRS', "Hardware doesn't support IBRS" );
+        assert_script_run( "echo cpuinfo->model: " . $cpu_model );
+        assert_script_run( 'cat '
+              . $syspath
+              . 'spectre_v2'
+              . '| grep "^Mitigation: Full generic retpoline.*"' );
+
+#TODO on openSUSE-Leap 42.3 we still need check the following code.
+#		assert_script_run('dmesg | grep "Retpolines enabled, force-disabling IBRS due to \!SKL-era core"');
+        assert_script_run('dmesg | grep "Filling RSB on context switch"');
+        assert_script_run(
+            'dmesg | grep -v "Enabling conditional Indirect Branch Prediction Barrier"');
+        assert_script_run(
+'dmesg | grep -v "Enabling Restricted Speculation for firmware calls"'
+        );
+
+        record_info( 'Unsupport IBRS mode', "spectre_v2 default mode finish." );
+
+        #add spectre_v2=ibrs parameter to disable spectre_v2 mitigation
+        add_grub_cmdline_settings("spectre_v2=ibrs");
+        grub_mkconfig;
+
+        #reboot and stand by
+        reboot_and_wait( $self, 150 );
+        record_info( 'IBRS start', "spectre_v2=ibrs start." );
+
+        #recheck the status of spectre_v2=ibrs
+        assert_script_run('cat /proc/cmdline');
+        assert_script_run('grep "spectre_v2=ibrs" /proc/cmdline');
+
+        #check cpu flags
+        assert_script_run('cat /proc/cpuinfo');
+        assert_script_run('grep -v "^flags.*ibrs.*" /proc/cpuinfo');
+        assert_script_run('grep -v "^flags.*ibpb.*" /proc/cpuinfo');
+
+        #check sysfs
+        assert_script_run( 'cat ' . $syspath . 'spectre_v2' );
+        assert_script_run(
+            'cat ' . $syspath . 'spectre_v2' . '| grep "^Mitigation: Full generic retpoline, STIBP: disabled, RSB filling$"' );
+
+        assert_script_run('dmesg | grep "Filling RSB on context switch"');
+        #chech dmesg
+        record_info( 'IBRS finish', "spectre_v2=ibrs finish and PASS." );
+        remove_grub_cmdline_settings("spectre_v2=ibrs");
+        record_info( 'Unsupport IBRS mode', "spectre_v2 IBRS mode finish." );
+    }
+
 
 }
 

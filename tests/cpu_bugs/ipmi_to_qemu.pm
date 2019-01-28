@@ -26,6 +26,21 @@ my $nfs_hostname = get_var('NFS_HOSTNAME');
 my $qemu_worker_class = get_var('QEMU_WORKER_CLASS');
 sub run {
 	my $self = shift;
+
+	script_run("yast virtualization");
+	send_key 'alt-k';
+	send_key 'alt-v';
+	send_key 'alt-a';
+
+	assert_screen([qw(yast_virtualization_installed yast_virtualization_bridge)], 600);
+	assert_screen("yast_virtualization_accept");
+	send_key 'alt-y';
+	if (match_has_tag('yast_virtualization_bridge')) {
+	# select yes
+		send_key 'alt-y';
+		assert_screen 'yast_virtualization_installed', 60;
+	}
+	send_key 'alt-o';
 	script_run("systemctl disable apparmor.service");
 	script_run("aa-teardown");
 	script_run("zypper rr devel_languages_perl devel_openQA devel_openQA_SLE-12 devel_openQA_SLE-15");
@@ -67,6 +82,8 @@ sub run {
         script_run('systemctl start openqa-worker@6');
         script_run('systemctl start openqa-worker@7');
         script_run('systemctl start openqa-worker@8');
+
+	
 }
 
 1;
