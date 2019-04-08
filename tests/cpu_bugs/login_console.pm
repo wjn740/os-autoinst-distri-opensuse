@@ -27,7 +27,7 @@ sub login_to_console {
     $timeout = $login_timeout;
 
     select_console 'sol', await_console => 0;
-    if ( check_screen( 'login_screen', $timeout ) ) {
+    if ( check_screen( 'text-login', $timeout ) ) {
         #use console based on ssh to avoid unstable ipmi
         use_ssh_serial_console;
     }

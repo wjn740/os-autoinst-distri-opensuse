@@ -753,6 +753,9 @@ elsif (get_var('CPU_BUGS')) {
     if (get_var('IPMI_TO_QEMU')) {
     	loadtest "cpu_bugs/ipmi_to_qemu"
     }
+    if (get_var('WAIT_QEMU')) {
+    	loadtest "cpu_bugs/wait_qemu"
+    }
     if (get_var('MELTDOWN')) {
         loadtest "cpu_bugs/meltdown";
     }

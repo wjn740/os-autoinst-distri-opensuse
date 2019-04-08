@@ -80,6 +80,7 @@ sub create_new_vm {
 }
 
 sub run {
+    yast_virt_setup();
     script_run("aa-teardown");
     zypper_call("in libvirt-client");
     zypper_call("in qemu-kvm");

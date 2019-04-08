@@ -21,6 +21,31 @@ use ipmi_backend_utils;
 use Utils::Backends 'use_ssh_serial_console';
 
 
+sub yast_virt_setup {
+	script_run("yast virtualization; echo yast-virtualization-\$? >/dev/$serialdev", 0);
+	sleep 5;
+	assert_screen([qw(yast_textmode_virtualization yast_textmode_virtualization_kvm_installed)], 30);
+	if (match_has_tag('yast_textmode_virtualization')) {
+# select yes
+		send_key 'alt-k';
+		send_key 'alt-v';
+		send_key 'alt-a';
+	}else {
+		send_key 'alt-a';
+		return;
+	}
+
+	assert_screen("yast_virtualization_run_in_textmode", 100);
+	send_key 'alt-y';
+
+	assert_screen([qw(yast_virtualization_installed yast_virtualization_bridge)], 600);
+	if (match_has_tag('yast_virtualization_bridge')) {
+	# select yes
+		send_key 'alt-y';
+		assert_screen 'yast_virtualization_installed', 60;
+	}
+	send_key 'alt-o';
+}
 sub reboot_and_wait {
     my ( $self, $timeout ) = @_;
     power_action( 'reboot', textmode => 1, keepconsole => 1 );

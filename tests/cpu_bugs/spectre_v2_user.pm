@@ -30,7 +30,7 @@ sub run {
     my $edx = script_output(
 "cpuid -1 -l 7 -s 0 -r | awk \'{print \$6}\' | awk -F \"=\" \'{print \$2}\' | tail -n1"
     );
-    if ( hex $edx & 0x0C000000 ) {
+    if ( (hex $edx & 0x0C000000 ) eq 0x0C000000 ) {
         assert_script_run(
 "(echo \"Ucode has been update for STIBP and IBPB support\") | tee /dev/$serialdev"
         );
