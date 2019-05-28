@@ -74,7 +74,7 @@ sub create_new_vm {
     );
     assert_script_run('chmod 755 create_vm_with_exist_disk.sh');
     assert_script_run(
-        "./create_vm_with_exist_disk.sh ${name}  ${subname}  ${vm_pool} ${cpu_1}"
+"./create_vm_with_exist_disk.sh ${name}  ${subname}  ${vm_pool} ${cpu_1}"
     );
 
 }
@@ -86,13 +86,13 @@ sub run {
     zypper_call("in -t pattern kvm_server kvm_tools");
     assert_script_run("mkdir -pv $vm_shares");
     assert_script_run("mkdir -pv $vm_pool");
-    if (get_var("MIGRATION_HOST")) {
-        mutex_create "flag_lock";
+    if ( get_var("MIGRATION_HOST") ) {
+    	mutex_create "flag_lock";
         my $children = get_children();
-        my $child_id = (keys %$children)[0];
+        my $child_id = ( keys %$children )[0];
         assert_script_run("cp /etc/exports{,.bak}");
         assert_script_run(
-            "sed -i \"/^" . "\\" . ${vm_shares} . "/d\" /etc/exports");
+            "sed -i \"/^" . "\\" . ${vm_shares} . "/d\" /etc/exports" );
 
         #setup NFS and release a lock to notice client side
         zypper_call("in nfs-kernel-server");
@@ -102,23 +102,23 @@ sub run {
         mutex_create 'nfs_server_ready';
 
         #waiting for client to finish inital operation
-        mutex_wait('dest_host_ready', $child_id);
+        mutex_wait( 'dest_host_ready', $child_id );
 
         #Do migrate
         assert_script_run("mount $source_host:$vm_shares $vm_pool");
-        #Inital task
-        jobs_done();
+	#Inital task
+	jobs_done();
 
     }
-    elsif (get_var("MIGRATION_DEST")) {
+    elsif ( get_var("MIGRATION_DEST") ) {
 
         #access this machine without password
         assert_script_run("cp /etc/libvirt/libvirtd.conf{,.bak}");
         assert_script_run(
-            "sed -i 's/#listen_tcp = 1/listen_tcp = 1/g' /etc/libvirt/libvirtd.conf"
+"sed -i 's/#listen_tcp = 1/listen_tcp = 1/g' /etc/libvirt/libvirtd.conf"
         );
         assert_script_run(
-            "sed -i 's/#auth_tcp = .*/auth_tcp = \"none\"/g' /etc/libvirt/libvirtd.conf"
+"sed -i 's/#auth_tcp = .*/auth_tcp = \"none\"/g' /etc/libvirt/libvirtd.conf"
         );
         systemctl("restart libvirtd");
 
@@ -133,23 +133,23 @@ sub run {
 
     }
 
-    for my $c (split /,/, $cpu) {
+    for my $c ( split /,/, $cpu ) {
         ${cpu_1} = $c;
         $subname =
           script_output("echo ${cpu_1} | sha1sum | awk \'{print \$1}\'");
         while (1) {
             mutex_lock "flag_lock";
-            if (check_idle_status() == 0) {
-                if (get_var("MIGRATION_HOST")) {
+            if ( check_idle_status() == 0 ) {
+                if ( get_var("MIGRATION_HOST") ) {
                     remove_old_vm();
                     create_new_vm();
                     assert_script_run(
                         "virsh start $name-$subname",
                         fail_message =>
-                          "You need run install testcase to setup a KVM guest for migration."
+"You need run install testcase to setup a KVM guest for migration."
                     );
                     assert_script_run(
-                        "virsh migrate --live $name-$subname --verbose qemu+tcp://$dest_host/system"
+"virsh migrate --live $name-$subname --verbose qemu+tcp://$dest_host/system"
                     );
 
                     assert_script_run(
@@ -157,56 +157,59 @@ sub run {
                     assert_script_run(
                         "virsh list --all | grep \"${name}-$subname.*shut off\""
                     );
-                    goto_work();
-                    mutex_unlock "flag_lock";
-                    last;
+		    goto_work();
+		    mutex_unlock "flag_lock";
+		    last;
 
                 }
                 else {
-                    mutex_unlock "flag_lock";
+		    mutex_unlock "flag_lock";
+		    check_working_status();
+		    
                     next;
                 }
             }
-            if (check_working_status() == 0) {
-                if (get_var("MIGRATION_HOST")) {
-                    mutex_unlock "flag_lock";
+            if ( check_working_status() == 0) {
+                if ( get_var("MIGRATION_HOST") ) {
+		    mutex_unlock "flag_lock";
+		    check_idle_status();
                     next;
                 }
                 else {
                     #waiting migrate until finish
                     assert_script_run("virsh list | grep $name-$subname");
                     assert_script_run("virsh destroy $name-$subname");
-                    jobs_done();
-                    mutex_unlock "flag_lock";
+		    jobs_done();
+		    mutex_unlock "flag_lock";
                     last;
                 }
             }
-            mutex_unlock "flag_lock";
+	    mutex_unlock "flag_lock";
         }
     }
 
-    if (get_var("MIGRATION_DEST")) {
+    if ( get_var("MIGRATION_DEST") ) {
         #cleanup
         assert_script_run("cp /etc/libvirt/libvirtd.conf{.bak,}");
     }
-    if (get_var("MIGRATION_HOST")) {
+    if ( get_var("MIGRATION_HOST") ) {
         assert_script_run("cp /etc/exports{.bak,}");
     }
 }
 
 sub test_flags {
-    return {milestone => 1, fatal => 0};
+    return { milestone => 1, fatal => 0 };
 }
 
 sub post_fail_hook {
     my ($self) = @_;
     select_console 'root-console';
-    if (get_var("MIGRATION_HOST")) {
+    if ( get_var("MIGRATION_HOST") ) {
         assert_script_run(
-            "sed -i \"/^" . "\\" . ${vm_pool} . "/d\" /etc/exports");
+            "sed -i \"/^" . "\\" . ${vm_pool} . "/d\" /etc/exports" );
         assert_script_run("cp /etc/exports{.bak,}");
     }
-    elsif (get_var("MIGRATION_DEST")) {
+    elsif ( get_var("MIGRATION_DEST") ) {
         assert_script_run("cp /etc/libvirt/libvirtd.conf{.bak,}");
     }
     assert_script_run('virsh list > /tmp/virsh_list.log');

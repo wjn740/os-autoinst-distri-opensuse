@@ -50,6 +50,7 @@ sub run {
     );
 
     systemctl("restart wicked.service", 300);
+    systemctl("restart libvirtd.service", 300);
 
     #remove old VM
     assert_script_run(
