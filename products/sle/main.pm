@@ -683,6 +683,44 @@ elsif (get_var("SUPPORT_SERVER")) {
 elsif (get_var("SLEPOS")) {
     load_slepos_tests();
 }
+elsif (get_var('CPU_BUGS')) {
+    if (check_var('BACKEND', 'ipmi')) {
+    	loadtest "cpu_bugs/login_console";
+    }
+    elsif (check_var('BACKEND', 'qemu')) {
+    	boot_hdd_image;
+    	loadtest "console/system_prepare";
+    	loadtest "console/consoletest_setup";
+    	loadtest "console/hostname";
+    	if (get_var('PREPARE_REPO')) {
+    	    loadtest "cpu_bugs/add_repos_qemu"
+    	}
+    }
+    if (get_var('IPMI_TO_QEMU')) {
+    	loadtest "cpu_bugs/ipmi_to_qemu"
+    }
+    if (get_var('MELTDOWN')) {
+        loadtest "cpu_bugs/meltdown";
+    }
+    if (get_var('SPECTRE_V2')) {
+        loadtest "cpu_bugs/spectre_v2";
+    }
+    if (get_var('SPECTRE_V2_USER')) {
+        loadtest "cpu_bugs/spectre_v2_user";
+    }
+    if (get_var('SPECTRE_V4')) {
+        loadtest "cpu_bugs/spectre_v4";
+    }
+    if (get_var('L1TF')) {
+        loadtest "cpu_bugs/l1tf";
+    }
+    if (get_var('KVM_GUEST_INST')) {
+        loadtest "cpu_bugs/kvm_guest_install";
+    }
+    if (get_var('KVM_GUEST_MIGRATION')) {
+        loadtest "cpu_bugs/kvm_guest_migration";
+    }
+}
 elsif (get_var("SECURITY_TEST")) {
     prepare_target();
     load_security_tests;
