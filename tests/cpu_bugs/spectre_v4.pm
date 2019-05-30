@@ -51,9 +51,12 @@ sub run {
           script_run('grep -v "nospec_store_bypass_disable" /proc/cmdline');
         my $ret2 =
           script_run('grep -v "spec_store_bypass_disable=off" /proc/cmdline');
-        if ( $ret1 ne 0 or $ret2 ne 0 ) {
+        my $ret3 =
+          script_run('grep -v "mitigations=off" /proc/cmdline');
+        if ( $ret1 ne 0 or $ret2 ne 0 or $ret3 ne 0) {
             remove_grub_cmdline_settings("nospec_store_bypass_disable");
             remove_grub_cmdline_settings("spec_store_bypass_disable=[a-z,]*");
+            remove_grub_cmdline_settings("mitigations=off");
             grub_mkconfig;
             reboot_and_wait( $self, 150 );
         }

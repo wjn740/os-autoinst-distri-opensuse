@@ -55,10 +55,12 @@ sub run {
         my $ret1 = script_run('grep -v "nospectre_v2" /proc/cmdline');
         my $ret2 = script_run('grep -v "spectre_v2=[a-z,]*" /proc/cmdline');
         my $ret3 = script_run('grep -v "spectre_v2_user=[a-z,]*" /proc/cmdline');
-        if ( $ret1 ne 0 or $ret2 ne 0 or $ret3 ne 0 ) {
+        my $ret4 = script_run('grep -v "mitigations=off" /proc/cmdline');
+        if ( $ret1 ne 0 or $ret2 ne 0 or $ret3 ne 0 or $ret4 ne 0) {
             remove_grub_cmdline_settings("nospectre_v2");
             remove_grub_cmdline_settings("spectre_v2=[a-z,]*");
             remove_grub_cmdline_settings("spectre_v2_user=[a-z,]*");
+            remove_grub_cmdline_settings("mitigations=off");
             grub_mkconfig;
             reboot_and_wait( $self, 150 );
             assert_script_run('grep -v "nospectre_v2" /proc/cmdline');
@@ -174,9 +176,11 @@ sub run {
         assert_script_run('cat /proc/cmdline');
         my $ret1 = script_run('grep -v "nospectre_v2" /proc/cmdline');
         my $ret2 = script_run('grep -v "spectre_v2=[a-z,]*" /proc/cmdline');
-        if ( $ret1 ne 0 or $ret2 ne 0 ) {
+        my $ret3 = script_run('grep -v "mitigations=off" /proc/cmdline');
+        if ( $ret1 ne 0 or $ret2 ne 0 or $ret3 ne 0) {
             remove_grub_cmdline_settings("nospectre_v2");
             remove_grub_cmdline_settings("spectre_v2=[a-z,]*");
+            remove_grub_cmdline_settings("mitigations=off");
             grub_mkconfig;
             reboot_and_wait( $self, 150 );
             assert_script_run('grep -v "nospectre_v2" /proc/cmdline');
