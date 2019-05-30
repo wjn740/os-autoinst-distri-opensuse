@@ -53,6 +53,7 @@ sub run {
     my $ret = script_run('grep -v "l1tf=.*" /proc/cmdline');
     if ( $ret ne 0 ) {
         remove_grub_cmdline_settings("l1tf=[a-z,]*");
+        remove_grub_cmdline_settings("mitigations=off");
         grub_mkconfig;
         reboot_and_wait( $self, 150 );
     }
