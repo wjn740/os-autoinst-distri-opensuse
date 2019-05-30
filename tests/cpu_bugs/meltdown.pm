@@ -26,11 +26,23 @@ sub run {
     my $self = shift;
     select_console 'root-console';
 
+ #Platform check
+    my $pti = script_run('cat '
+                         . $syspath 
+			 . ' pti '
+                         . '| grep "Not affected"');
+    if ( $pti ne 0 ) {
+        record_soft_failure("This machine not affected.");
+	return;
+    }
+
     #check default status
     assert_script_run('cat /proc/cmdline');
     my $ret = script_run('grep -v "pti=[a-z]*" /proc/cmdline');
-    if ( $ret ne 0 ) {
+    my $ret1 = script_run('grep -v "mitigations=off" /proc/cmdline');
+    if ( $ret ne 0 or $ret1 ne 0) {
         remove_grub_cmdline_settings("pti=[a-z]*");
+        remove_grub_cmdline_settings("mitigations=off");
         grub_mkconfig;
         reboot_and_wait( $self, 150 );
         assert_script_run('grep -v "pti=off" /proc/cmdline');
