@@ -23,27 +23,16 @@ use testapi;
 use utils;
 use power_action_utils 'power_action';
 
-use Pti;
+use Mitigation;
+
 
 sub run {
-  my $obj = new Pti("PTI", "", 1);
-  print "$obj->{'IA32_ARCH_CAPABILITIES'}\n";
-  print "$obj->{'CPUID'}\n";
+  my $obj = new Mitigation("l1tf", "", 0);
 
-  obj->Name("meltdown");
-  obj->CPUID(hex 'ffff0000');
-  obj->MSR(1);
-  $obj->show();
+  $obj->Name("l1tf");
 
-  print $obj->vulnerabilities();
-
-
-  print "\n";
-
-  print $obj->sysfs();
-  print $obj->dmesg();
-  print $obj->cmdline();
-  print $obj->lscpu();
+  $obj->load_msr();
+  $obj->load_cpuid();
 
 }
 
@@ -55,10 +44,12 @@ sub post_fail_hook {
     my ($self) = @_;
     select_console 'root-console';
     assert_script_run(
-        "md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload"
+        "md /tmp/upload; cp ". $Mitigation::syspath . "* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload"
     );
     remove_grub_cmdline_settings('l1tf=[a-z,]*');
     grub_mkconfig;
     upload_logs '/tmp/upload.tar.bz2';
     $self->SUPER::post_fail_hook;
 }
+
+1;
