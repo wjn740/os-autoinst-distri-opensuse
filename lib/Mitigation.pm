@@ -12,20 +12,38 @@
 # Maintainer: James Wang <jnwang@suse.com>
 #
 #
-
-#use cpu_bugs;
-use base "consoletest";
-use bootloader_setup;
-use ipmi_backend_utils;
-use power_action_utils 'power_action';
-use strict;
-use warnings;
-#use testapi;
-#use utils;
-
 package Mitigation;
 
-my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
+use strict;
+use warnings;
+
+use base "Exporter";
+use Exporter;
+
+use testapi;
+use utils;
+
+use Utils::Backends 'use_ssh_serial_console';
+use bootloader_setup qw(change_grub_config grep_grub_settings grub_mkconfig set_framebuffer_resolution set_extrabootparams_grub_conf);
+use ipmi_backend_utils;
+use power_action_utils 'power_action';
+
+
+sub reboot_and_wait {
+    my ( $self, $timeout ) = @_;
+    power_action( 'reboot', textmode => 1, keepconsole => 1 );
+    if ( check_var( 'BACKEND', 'ipmi' ) ) {
+        switch_from_ssh_to_sol_console( reset_console_flag => 'on' );
+        check_screen( 'login_screen', $timeout );
+        use_ssh_serial_console;
+    }
+    else {
+        $self->wait_boot( textmode => 1, ready_time => 300 );
+        select_console 'root-console';
+    }
+}
+
+our $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 my @mitigations_list = (
 	{
 		name => "meltdown",
@@ -136,7 +154,7 @@ sub new{
 		'name' => shift,
 		'CPUID' => shift,
 		'IA32_ARCH_CAPABILITIES' => shift,
-    'parameter' => shift
+    		'parameter' => shift
 	};
 
 	bless $self, $class;
@@ -168,6 +186,24 @@ sub MSR {
 	return $self->{'IA32_ARCH_CAPABILITIES'};
 }
 
+sub load_cpuid {
+	my $self = shift;
+	zypper_call("in cpuid");
+	my $edx = hex script_output(
+		"cpuid -1 -l 7 -s 0 -r | awk \'{print \$6}\' | awk -F \"=\" \'{print \$2}\' | tail -n1"
+	);
+	$self->CPUID($edx);
+}
+
+sub load_msr {
+	my $self = shift;
+	my $edx = script_output(
+		"perl -e \'open(M,\"<\",\"/dev/cpu/0/msr\") and seek(M,0x10a,0) and read(M,\$_,8) and print\' | od -t u8 -A n"
+	);
+	$self->MSR($edx);
+}
+
+
 sub show {
 	my $self = shift;
 	print $self->Name(),",";
@@ -182,9 +218,9 @@ sub vulnerabilities {
 		if ($item->{'name'} eq $self->Name()) {
 			if ($item->{'CPUID'} & $self->CPUID()) {
 				if ($item->{'IA32_ARCH_CAPABILITIES'} & $self->MSR()) {
-					return 0;
+					return 0; #Not Affected
 				}else {
-					return 1;
+					return 1; #Affected
 				}
 			}
 			return 1;
@@ -194,16 +230,16 @@ sub vulnerabilities {
 
 sub sysfs{
 	my $self = shift;
-  my $item;
-  my $p;
-  foreach $item (@mitigations_list) {
+	my $item;
+	my $p;
+	foreach $item (@mitigations_list) {
 		if ($item->{'name'} eq $self->Name()) {
-      for $p (keys $item->{'sysfs'}) {
-          print $syspath,$self->Name,"\n";
-          print $item->{'sysfs'}->{$p},"\n";
-      }
-    }
-  }
+			for $p (keys %{$item->{'sysfs'}}) {
+				print $syspath,$self->Name,"\n";
+				print $item->{'sysfs'}->{$p},"\n";
+			}
+		}
+	}
   return $item->{'sysfs'};
 }
 
@@ -213,7 +249,7 @@ sub dmesg{
   my $p;
   foreach $item (@mitigations_list) {
 		if ($item->{'name'} eq $self->Name()) {
-      for $p (keys $item->{'dmesg'}) {
+      for $p (keys %{$item->{'dmesg'}}) {
           print "dmesg ",$self->Name,"\n";
           print $item->{'dmesg'}->{$p},"\n";
       }
@@ -227,7 +263,7 @@ sub cmdline{
   my $p;
   foreach $item (@mitigations_list) {
 		if ($item->{'name'} eq $self->Name()) {
-      for $p (keys $item->{'cmdline'}) {
+      for $p (keys %{$item->{'cmdline'}}) {
           print "cmdline ",$self->Name,"\n";
           print $item->{'cmdline'}->{$p},"\n";
       }
@@ -241,7 +277,7 @@ sub lscpu{
   my $p;
   foreach $item ($self->getAllmitigationslist) {
 		if ($item->{'name'} eq $self->Name()) {
-      for $p (keys $item->{'lscpu'}) {
+      for $p (keys %{$item->{'lscpu'}}) {
           print "lscpu ",$self->Name,"\n";
           print $item->{'lscpu'}->{$p},"\n";
       }
@@ -260,7 +296,7 @@ sub check_default_status{
   my $ret = script_run('grep -v "' . $self->{'parameter'} . '=[a-z]*" /proc/cmdline');
   if ( $ret ne 0 ) { 
     remove_grub_cmdline_settings($self->{'parameter'} . "=[a-z]*");
-    grub_mkconfig;
+    bootloader_setup::grub_mkconfig();
     reboot_and_wait( $self, 150 );
     assert_script_run('grep -v "' . $self->{'parameter'} . '=off" /proc/cmdline');
   }   
@@ -268,6 +304,7 @@ sub check_default_status{
 
 sub check_cpu_flags {
   my $self = shift;
+  my $flag = shift;
   assert_script_run('cat /proc/cpuinfo');
   foreach $flag ($self->{'cpuflags'}) {
     assert_script_run('cat /proc/cpuinfo | grep "^flags.*' . $self->{'cpuflags'} .'.*"');
@@ -286,6 +323,7 @@ sub check_sysfs {
 sub check_dmesg {
   my $self = shift;
   my $value = shift; #the value of kernel parameter
+  my $string;
 
   foreach $string ($self->{'dmesg'}->{$value}) {
     assert_script_run(
@@ -298,7 +336,7 @@ sub add_parameter{
   my $self = shift;
   my $value = shift;
   add_grub_cmdline_settings($self->{'parameter'} .'='. $value);
-  grub_mkconfig;
+  bootloader_setup::grub_mkconfig();
   reboot_and_wait( $self, 150 );
 }
 
@@ -306,7 +344,7 @@ sub remove_parameter{
   my $self = shift;
   my $value = shift;
   remove_grub_cmdline_settings($self->{'parameter'} .'='. $value);
-  grub_mkconfig;
+  bootloader_setup::grub_mkconfig();
   reboot_and_wait( $self, 150 );
 }
 
