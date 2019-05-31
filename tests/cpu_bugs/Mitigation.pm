@@ -14,10 +14,10 @@
 #
 
 #use cpu_bugs;
-#use base "consoletest";
-##use bootloader_setup;
-##use ipmi_backend_utils;
-##use power_action_utils 'power_action';
+use base "consoletest";
+use bootloader_setup;
+use ipmi_backend_utils;
+use power_action_utils 'power_action';
 use strict;
 use warnings;
 #use testapi;
@@ -25,15 +25,33 @@ use warnings;
 
 package Mitigation;
 
+my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 my @mitigations_list = (
 	{
 		name => "meltdown",
 		CPUID => hex '20000000',
 		IA32_ARCH_CAPABILITIES => 1, #bit0 -- RDCL_NO
-		SLE12SP4 => {
+    parameter => 'pti',
+    cpuflags => ('pti'),
+		sysfs => {
 				"on" => "Mitigation: PTI", 
 				"off" => "Vulnerable", 
 				"auto" => "Mitigation: PTI",
+				},
+		dmesg => {
+				"on" => "Kernel/User page tables isolation: enabled", 
+				"off" => "", 
+				"auto" => "Kernel/User page tables isolation: enabled",
+				},
+		cmdline => {
+				"on" => "pti=on", 
+				"off" => "pti=off", 
+				"auto" => "pti=auto",
+				},
+		lscpu => {
+				"on" => "pti", 
+				"off" => "", 
+				"auto" => "pti",
 				},
 	},
 	{
@@ -117,7 +135,8 @@ sub new{
 	my $self = {
 		'name' => shift,
 		'CPUID' => shift,
-		'IA32_ARCH_CAPABILITIES' => shift
+		'IA32_ARCH_CAPABILITIES' => shift,
+    'parameter' => shift
 	};
 
 	bless $self, $class;
@@ -172,6 +191,125 @@ sub vulnerabilities {
 		}
 	}
 }
+
+sub sysfs{
+	my $self = shift;
+  my $item;
+  my $p;
+  foreach $item (@mitigations_list) {
+		if ($item->{'name'} eq $self->Name()) {
+      for $p (keys $item->{'sysfs'}) {
+          print $syspath,$self->Name,"\n";
+          print $item->{'sysfs'}->{$p},"\n";
+      }
+    }
+  }
+  return $item->{'sysfs'};
+}
+
+sub dmesg{
+	my $self = shift;
+  my $item;
+  my $p;
+  foreach $item (@mitigations_list) {
+		if ($item->{'name'} eq $self->Name()) {
+      for $p (keys $item->{'dmesg'}) {
+          print "dmesg ",$self->Name,"\n";
+          print $item->{'dmesg'}->{$p},"\n";
+      }
+    }
+  }
+}
+
+sub cmdline{
+	my $self = shift;
+  my $item;
+  my $p;
+  foreach $item (@mitigations_list) {
+		if ($item->{'name'} eq $self->Name()) {
+      for $p (keys $item->{'cmdline'}) {
+          print "cmdline ",$self->Name,"\n";
+          print $item->{'cmdline'}->{$p},"\n";
+      }
+    }
+  }
+}
+
+sub lscpu{
+	my $self = shift;
+  my $item;
+  my $p;
+  foreach $item ($self->getAllmitigationslist) {
+		if ($item->{'name'} eq $self->Name()) {
+      for $p (keys $item->{'lscpu'}) {
+          print "lscpu ",$self->Name,"\n";
+          print $item->{'lscpu'}->{$p},"\n";
+      }
+    }
+  }
+}
+
+sub getAllmitigationslist {
+  return @mitigations_list;
+}
+
+
+sub check_default_status{
+  my $self = shift;
+  assert_script_run('cat /proc/cmdline');
+  my $ret = script_run('grep -v "' . $self->{'parameter'} . '=[a-z]*" /proc/cmdline');
+  if ( $ret ne 0 ) { 
+    remove_grub_cmdline_settings($self->{'parameter'} . "=[a-z]*");
+    grub_mkconfig;
+    reboot_and_wait( $self, 150 );
+    assert_script_run('grep -v "' . $self->{'parameter'} . '=off" /proc/cmdline');
+  }   
+}
+
+sub check_cpu_flags {
+  my $self = shift;
+  assert_script_run('cat /proc/cpuinfo');
+  foreach $flag ($self->{'cpuflags'}) {
+    assert_script_run('cat /proc/cpuinfo | grep "^flags.*' . $self->{'cpuflags'} .'.*"');
+  }
+}
+
+sub check_sysfs {
+  my $self = shift;
+  my $value = shift; #the value of kernel parameter
+
+  assert_script_run( 'cat ' . $syspath . $self->Name() );
+  assert_script_run(
+    'cat ' . $syspath . $self->Name() . '| grep ' . $self->sysfs()->{$value} );
+}
+
+sub check_dmesg {
+  my $self = shift;
+  my $value = shift; #the value of kernel parameter
+
+  foreach $string ($self->{'dmesg'}->{$value}) {
+    assert_script_run(
+      'dmesg | grep "' . $string . '"');
+  }
+}
+
+
+sub add_parameter{
+  my $self = shift;
+  my $value = shift;
+  add_grub_cmdline_settings($self->{'parameter'} .'='. $value);
+  grub_mkconfig;
+  reboot_and_wait( $self, 150 );
+}
+
+sub remove_parameter{
+  my $self = shift;
+  my $value = shift;
+  remove_grub_cmdline_settings($self->{'parameter'} .'='. $value);
+  grub_mkconfig;
+  reboot_and_wait( $self, 150 );
+}
+
 
 
 1;
