@@ -25,9 +25,28 @@ use power_action_utils 'power_action';
 
 use Mitigation;
 
+my %mitigations_list = 
+	(
+		name => "mds",
+		CPUID => hex '20000000',
+		IA32_ARCH_CAPABILITIES => 32, #bit5 --MDS_NO
+		parameter => 'mds',
+		cpuflags => ['md_clear'],
+		sysfs => {
+			"full" => "Mitigation: Clear CPU buffers; SMT vulnerable",
+			"full,nosmt" => "Mitigation: Clear CPU buffers; SMT disabled",
+			"off" => "Vulnerable; SMT vulnerable", 
+			"default" => "Mitigation: Clear CPU buffers; SMT vulnerable",
+		},
+		cmdline => [
+			"full",
+			"full,nosmt",
+			"off",
+		],
+	);
 
 sub run {
-  my $obj = new Mitigation("mds", "", 0, "mds", "mds");
+  my $obj = new Mitigation(\%mitigations_list);
 #run base function testing
   $obj->do_test();
 }

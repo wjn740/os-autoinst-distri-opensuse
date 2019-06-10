@@ -25,9 +25,32 @@ use power_action_utils 'power_action';
 
 use Mitigation;
 
+my %mitigations_list = 
+	(
+		name => "spectre_v4",
+		CPUID => hex '80000000',
+		IA32_ARCH_CAPABILITIES => 16, #bit4 --SSB_NO 
+		parameter => 'spectre_v4',
+		cpuflags => ['ssbd'],
+		sysfs => {
+			"on" => "Mitigation: Speculative Store Bypass disabled",
+			"off" => "Vulnerable",
+			"auto" => "Mitigation: Speculative Store Bypass disabled via prctl and seccomp", 
+			"prctl" => "Mitigation: Speculative Store Bypass disabled via prctl", 
+			"seccomp" => "Mitigation: Speculative Store Bypass disabled via prctl and seccomp",
+			"default" => "Mitigation: Speculative Store Bypass disabled via prctl and seccomp",
+		},
+		cmdline => [
+			"on",
+			"off",
+			"auto",
+			"prctl",
+			"seccomp",
+		],
+	);
 
 sub run {
-  my $obj = new Mitigation("spectre_v4", "", 0, "spec_store_bypass_disable", "spec_store_bypass");
+  my $obj = new Mitigation(\%mitigations_list);
 #run base function testing
   $obj->do_test();
 }
