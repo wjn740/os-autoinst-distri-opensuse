@@ -465,6 +465,8 @@ sub do_test {
 	$self->check_sysfs("default");
 
 	$self->check_each_parameter_value();
+
+  	remove_grub_cmdline_settings($self->{'parameter'} .'='. '[a-z]*');
 }
 
 
