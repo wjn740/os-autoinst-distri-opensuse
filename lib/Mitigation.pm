@@ -156,21 +156,12 @@ sub cmdline{
 
 sub lscpu{
 	my $self = shift;
-  my $item;
   my $p;
-  foreach $item ($self->getAllmitigationslist) {
-		if ($item->{'name'} eq $self->Name()) {
-      for $p (keys %{$item->{'lscpu'}}) {
-          print "lscpu ",$self->Name,"\n";
-          print $item->{'lscpu'}->{$p},"\n";
-      }
-    }
+      for $p (keys %{$self->{'lscpu'}}) {
+        print $p,"\n";
   }
 }
 
-sub getAllmitigationslist {
-  return @mitigations_list;
-}
 
 
 sub check_default_status{
