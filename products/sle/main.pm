@@ -714,6 +714,9 @@ elsif (get_var('CPU_BUGS')) {
     if (get_var('SPECTRE_V4')) {
         loadtest "cpu_bugs/spectre_v4";
     }
+    if (get_var('MDS')) {
+        loadtest "cpu_bugs/mds";
+    }
     if (get_var('L1TF')) {
         loadtest "cpu_bugs/l1tf";
     }

@@ -28,13 +28,12 @@ use Mitigation;
 
 sub run {
   my $obj = new Mitigation("l1tf", "", 0);
-
+#intial name
   $obj->Name("l1tf");
-
-  $obj->load_msr();
-  $obj->load_cpuid();
-
+#run base function testing
+  $obj->do_test();
 }
+
 
 sub test_flags {
     return { milestone => 1, fatal => 0 };
@@ -44,11 +43,11 @@ sub post_fail_hook {
     my ($self) = @_;
     select_console 'root-console';
     assert_script_run(
-        "md /tmp/upload; cp ". $Mitigation::syspath . "* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload"
+        "md /tmp/upload_mitigations; cp ". $Mitigation::syspath . "* /tmp/upload_mitigations; cp /proc/cmdline /tmp/upload_mitigations; lscpu >/tmp/upload_mitigations/cpuinfo; tar -jcvf /tmp/upload_mitigations.tar.bz2 /tmp/upload_mitigations"
     );
     remove_grub_cmdline_settings('l1tf=[a-z,]*');
     grub_mkconfig;
-    upload_logs '/tmp/upload.tar.bz2';
+    upload_logs '/tmp/upload_mitigations.tar.bz2';
     $self->SUPER::post_fail_hook;
 }
 
