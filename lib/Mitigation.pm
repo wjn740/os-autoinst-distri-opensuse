@@ -184,9 +184,9 @@ sub check_cpu_flags {
   my $flag;
   assert_script_run('cat /proc/cpuinfo');
   foreach $flag (@{$self->{'cpuflags'}}) {
-    assert_script_run('cat /proc/cpuinfo | grep "^flags.*' . $self->{'cpuflags'} .'.*"');
+    assert_script_run('cat /proc/cpuinfo | grep "^flags.*' . $flag .'.*"');
     if ($reverse) {
-    	assert_script_run('cat /proc/cpuinfo | grep -v "^flags.*' . $self->{'cpuflags'} .'.*"');
+    	assert_script_run('cat /proc/cpuinfo | grep -v "^flags.*' . $flag .'.*"');
     }
   }
 }
