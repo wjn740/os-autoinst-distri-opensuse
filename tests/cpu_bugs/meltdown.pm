@@ -25,9 +25,39 @@ use power_action_utils 'power_action';
 
 use Mitigation;
 
+my %mitigations_list = 
+	(
+		name => "meltdown",
+		CPUID => hex '20000000',
+		IA32_ARCH_CAPABILITIES => 1, #bit0 -- RDCL_NO
+		parameter => 'pti',
+		cpuflags => ['pti'],
+		sysfs => {
+			"on" => "Mitigation: PTI", 
+			"off" => "Vulnerable", 
+			"auto" => "Mitigation: PTI",
+			"default" => "Mitigation: PTI", 
+		},
+		dmesg => {
+			"on" => "Kernel/User page tables isolation: enabled", 
+			"off" => "", 
+			"auto" => "Kernel/User page tables isolation: enabled",
+			"default" => "Kernel/User page tables isolation: enabled", 
+		},
+		cmdline => [
+			"on",
+			"off",
+			"auto",
+		],
+		lscpu => {
+			"on" => "pti", 
+			"off" => "", 
+			"auto" => "pti",
+		},
+	);
 
 sub run {
-  my $obj = new Mitigation("meltdown", "", 0, "pti", "meltdown");
+  my $obj = new Mitigation(\%mitigations_list);
 #run base function testing
   $obj->do_test();
 }

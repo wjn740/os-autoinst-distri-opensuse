@@ -26,8 +26,29 @@ use power_action_utils 'power_action';
 use Mitigation;
 
 
+my %mitigations_list = 
+	(
+		name => "spectre_v2",
+		CPUID => hex '4000000',
+		IA32_ARCH_CAPABILITIES => 2, #bit1 -- EIBRS
+		parameter => 'spectre_v2',
+		cpuflags => ['ibrs', 'ibpb', 'stibp'],
+		sysfs => {
+				"on" => "Mitigation: Indirect Branch Restricted Speculation.*IBPB: always-on, IBRS_FW, STIBP: forced*", 
+				"off" => "Vulnerable,.*IBPB: disabled,.*STIBP: disabled", 
+				"auto" => "Mitigation: Indirect Branch Restricted Speculation.*IBPB: conditional, IBRS_FW, STIBP: conditional,*",
+				"retpoline" => "Mitigation: Full generic retpoline.*",
+				"ibrs" => "Mitigation: Indirect Branch Restricted Speculation.*"
+				},
+		cmdline => [
+				"on",
+				"off",
+				"auto",
+				"retpoline",
+				],
+	);
 sub run {
-  my $obj = new Mitigation("spectre_v2", "", 0, "spectre_v2", "spectre_v2");
+  my $obj = new Mitigation(\%mitigations_list);
 #run base function testing
   $obj->do_test();
 }
