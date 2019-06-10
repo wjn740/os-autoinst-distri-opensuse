@@ -42,7 +42,7 @@ sub run {
     assert_script_run(
         'curl '
           . data_url("cpu_bugs/network-bridge/ifcfg-eth0")
-          . ' -o /etc/sysconfig/network/ifcfg-'${netdevice},
+          . ' -o /etc/sysconfig/network/ifcfg-' . ${netdevice},
         60
     );
 
