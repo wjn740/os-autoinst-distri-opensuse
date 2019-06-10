@@ -1,7 +1,7 @@
 # SUSE's openQA tests
 #
 # Copyright © 2009-2013 Bernhard M. Wiedemann
-# Copyright © 2012-2018 SUSE LLC
+# Copyright © 2012-2019 SUSE LLC
 #
 # Copying and distribution of this file, with or without modification,
 # are permitted in any medium without royalty provided the copyright
@@ -13,8 +13,6 @@
 
 use strict;
 use warnings;
-#use FindBin;
-#use lib $FindBin::Bin;
 
 use base "consoletest";
 use bootloader_setup;
@@ -25,11 +23,34 @@ use power_action_utils 'power_action';
 
 use Mitigation;
 
+my %mitigations_list = 
+	(
+		name => "l1tf",
+		CPUID => hex '10000000',
+		IA32_ARCH_CAPABILITIES => 8, #bit3 --SKIP_L1TF_VMENTRY
+		parameter => 'l1tf',
+		cpuflags => ['flush_l1d'],
+		sysfs => {
+			"full" => "Mitigation: PTE Inversion; VMX: cache flushes, SMT disabled", 
+			"full,force" => "Mitigation: PTE Inversion; VMX: cache flushes, SMT disabled", 
+			"flush" => "Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable", 
+			"flush,nosmt" => "Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT disabled", 
+			"flush,nowarn" => "Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable",
+			"off" => "Mitigation: PTE Inversion; VMX: vulnerable",
+			"default" => "Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable", 
+		},
+		cmdline => [
+			"full",
+			"full,force",
+			"flush",
+			"flush,nosmt",
+			"flush,nowarn",
+			"off",
+		],
+	);
 
 sub run {
-  my $obj = new Mitigation("l1tf", "", 0, "l1tf", "l1tf");
-#intial name
-  $obj->Name("l1tf");
+  my $obj = new Mitigation(\%mitigations_list);
 #run base function testing
   $obj->do_test();
 }
