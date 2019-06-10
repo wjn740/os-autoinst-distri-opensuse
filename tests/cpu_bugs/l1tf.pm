@@ -27,7 +27,7 @@ use Mitigation;
 
 
 sub run {
-  my $obj = new Mitigation("l1tf", "", 0);
+  my $obj = new Mitigation("l1tf", "", 0, "l1tf", "l1tf");
 #intial name
   $obj->Name("l1tf");
 #run base function testing
