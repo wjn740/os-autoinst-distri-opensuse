@@ -25,6 +25,8 @@ my $addonurl_hpc = get_var('ADDONURL_HPC');
 my $addonurl_sdk = get_var('ADDONURL_SDK');
 sub run {
 	my $self = shift;
+	#SLE >= 15, we need hpc, sdk modules
+	#SLE >= 12, we add these modules during installation, so skip here.
 	if(is_sle(">=15")) {
 		zypper_call("ar $addonurl_hpc hpc");
 		zypper_call("ar $addonurl_sdk sdk");
