@@ -11,7 +11,7 @@
 # Summary: switch IPMI to QEMU
 # Maintainer: James Wang <jnwang@suse.com>
 
-use cpu_bugs;
+use Mitigation;
 use base "consoletest";
 use bootloader_setup;
 use ipmi_backend_utils;
@@ -34,15 +34,22 @@ sub run {
 		zypper_call("ar http://download.opensuse.org/repositories/devel:/openQA/SLE_15/devel:openQA.repo");
 		zypper_call("ar http://download.opensuse.org/repositories/devel:/openQA:/SLE-15/SLE_15/devel:openQA:SLE-15.repo");
 	}elsif(is_sle(">=12")) {
-		zypper_call("ar http://download.opensuse.org/repositories/devel:/languages:/perl/SLE_12_SP3/devel:languages:perl.repo");
-		zypper_call("ar http://download.opensuse.org/repositories/devel:/openQA/SLE_12_SP3/devel:openQA.repo");
-		zypper_call("ar http://download.opensuse.org/repositories/devel:/openQA:/SLE-12/SLE_12_SP3/devel:openQA:SLE-12.repo");
+		zypper_call("ar http://download.opensuse.org/repositories/devel:/languages:/perl/SLE_12_SP4/devel:languages:perl.repo");
+		zypper_call("ar http://download.opensuse.org/repositories/devel:/openQA/SLE_12_SP4/devel:openQA.repo");
+		zypper_call("ar http://download.opensuse.org/repositories/devel:/openQA:/SLE-12/SLE_12_SP4/devel:openQA:SLE-12.repo");
 	}
         script_run("zypper -n --gpg-auto-import-keys ref");
+        script_run("zypper -n dup");
 	zypper_call("in openQA-worker");
 	zypper_call("in --replacefiles perl-DBD-SQLite");
 
-        assert_script_run("mount -t nfs $nfs_hostname:/var/lib/openqa/share /var/lib/openqa/share");
+	#NFS mount
+	#assert_script_run("mount -t nfs $nfs_hostname:/var/lib/openqa/share /var/lib/openqa/share");
+	
+	#Rsync
+	assert_script_run("echo \"[http://$nfs_hostname]\" >> /etc/openqa/workers.ini");
+	assert_script_run("echo \"TESTPOOLSERVER = rsync://$nfs_hostname/tests\" >>/etc/openqa/workers.ini");
+	
 
         assert_script_run("sed -i '/^#.*global/s/^#//' /etc/openqa/workers.ini");
         assert_script_run("sed -i '/^HOST =.*/d' /etc/openqa/workers.ini");
@@ -67,6 +74,14 @@ sub run {
         script_run('systemctl start openqa-worker@6');
         script_run('systemctl start openqa-worker@7');
         script_run('systemctl start openqa-worker@8');
+}
+
+sub test_flags {
+    return { milestone => 1, fatal => 0 };
+}
+
+sub post_fail_hook {
+    my ($self) = @_;
 }
 
 1;
