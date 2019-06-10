@@ -133,7 +133,7 @@ sub sysfs{
 	my ($self,$value) = @_;
 	my $p;
 			if (@_ == 2) {
-  				return $self->{'mitigations_list'}->{'sysfs'}->{$value};
+  				return $self->{'sysfs'}->{$value};
 			}
   			return $self->{'sysfs'};
 
@@ -142,21 +142,16 @@ sub sysfs{
 sub dmesg{
 	my $self = shift;
   my $p;
-      for $p (keys %{$item->{'dmesg'}}) {
+      for $p (keys %{$self->{'dmesg'}}) {
           print "dmesg ",$self->Name,"\n";
-          print $item->{'dmesg'}->{$p},"\n";
+          print $self->{'dmesg'}->{$p},"\n";
       }
 }
 
 sub cmdline{
 	my $self = shift;
-	my $item;
 	my $p;
-	foreach $item (@mitigations_list) {
-		if ($item->{'name'} eq $self->Name()) {
-			return $item->{'cmdline'};
-		}
-	}
+	return $self->{'cmdline'};
 }
 
 sub lscpu{
