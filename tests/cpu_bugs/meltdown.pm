@@ -32,6 +32,7 @@ my %mitigations_list =
 		IA32_ARCH_CAPABILITIES => 1, #bit0 -- RDCL_NO
 		parameter => 'pti',
 		cpuflags => ['pti'],
+    sysfs_name => "meltdown",
 		sysfs => {
 			"on" => "Mitigation: PTI", 
 			"off" => "Vulnerable", 

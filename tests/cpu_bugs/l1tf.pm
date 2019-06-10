@@ -30,6 +30,7 @@ my %mitigations_list =
 		IA32_ARCH_CAPABILITIES => 8, #bit3 --SKIP_L1TF_VMENTRY
 		parameter => 'l1tf',
 		cpuflags => ['flush_l1d'],
+    sysfs_name => "l1tf",
 		sysfs => {
 			"full" => "Mitigation: PTE Inversion; VMX: cache flushes, SMT disabled", 
 			"full,force" => "Mitigation: PTE Inversion; VMX: cache flushes, SMT disabled", 

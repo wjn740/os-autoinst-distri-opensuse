@@ -32,6 +32,7 @@ my %mitigations_list =
 		IA32_ARCH_CAPABILITIES => 32, #bit5 --MDS_NO
 		parameter => 'mds',
 		cpuflags => ['md_clear'],
+    sysfs_name => "mds",
 		sysfs => {
 			"full" => "Mitigation: Clear CPU buffers; SMT vulnerable",
 			"full,nosmt" => "Mitigation: Clear CPU buffers; SMT disabled",
