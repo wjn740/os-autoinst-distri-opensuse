@@ -11,109 +11,27 @@
 # Summary: CPU BUGS on Linux kernel check
 # Maintainer: James Wang <jnwang@suse.com>
 
-use cpu_bugs;
+use strict;
+use warnings;
+#use FindBin;
+#use lib $FindBin::Bin;
+
 use base "consoletest";
 use bootloader_setup;
-use ipmi_backend_utils;
-use power_action_utils 'power_action';
 use strict;
 use testapi;
 use utils;
+use power_action_utils 'power_action';
 
-my $syspath = '/sys/devices/system/cpu/vulnerabilities/';
+use Mitigation;
+
 
 sub run {
-    my $self = shift;
-    select_console 'root-console';
-
- #Platform check
-    my $pti = script_run('cat '
-                         . $syspath 
-			 . ' pti '
-                         . '| grep "Not affected"');
-    if ( $pti ne 0 ) {
-        record_soft_failure("This machine not affected.");
-	return;
-    }
-
-    #check default status
-    assert_script_run('cat /proc/cmdline');
-    my $ret = script_run('grep -v "pti=[a-z]*" /proc/cmdline');
-    my $ret1 = script_run('grep -v "mitigations=off" /proc/cmdline');
-    if ( $ret ne 0 or $ret1 ne 0) {
-        remove_grub_cmdline_settings("pti=[a-z]*");
-        remove_grub_cmdline_settings("mitigations=off");
-        grub_mkconfig;
-        reboot_and_wait( $self, 150 );
-        assert_script_run('grep -v "pti=off" /proc/cmdline');
-    }
-
-    #che#ck cpu flags
-    assert_script_run('cat /proc/cpuinfo');
-    assert_script_run('cat /proc/cpuinfo | grep "^flags.*pti.*"');
-
-    #che#ck sysfs
-    assert_script_run( 'cat ' . $syspath . 'meltdown' );
-    assert_script_run(
-        'cat ' . $syspath . 'meltdown' . '| grep "^Mitigation: PTI$"' );
-    assert_script_run(
-        'dmesg | grep "Kernel/User page tables isolation: enabled"');
-
-    #add pti=off parameter to disable meltdown mitigation
-    add_grub_cmdline_settings("pti=off");
-    grub_mkconfig;
-
-    #reboot and stand by
-    reboot_and_wait( $self, 150 );
-
-    #recheck the status of pti=off
-    assert_script_run('cat /proc/cmdline');
-    assert_script_run('grep "pti=off" /proc/cmdline');
-
-    #check cpu flags
-    assert_script_run('cat /proc/cpuinfo');
-    assert_script_run(
-        'if ! grep "^flags.*pti.*" /proc/cpuinfo; then true; else false; fi');
-
-    #check sysfs
-    assert_script_run( 'cat ' . $syspath . 'meltdown' );
-    assert_script_run(
-        'cat ' . $syspath . 'meltdown' . '| grep "^Vulnerable$"' );
-
-    #chech dmesg
-    assert_script_run(
-'dmesg | grep "Kernel/User page tables isolation: disabled on command line."'
-    );
-    remove_grub_cmdline_settings("pti=off");
-    grub_mkconfig;
-
-    #add pti=auto parameter to disable meltdown mitigation
-    add_grub_cmdline_settings("pti=auto");
-    grub_mkconfig;
-
-    #reboot and stand by
-    reboot_and_wait( $self, 150 );
-
-    #recheck the status of pti=auto
-    assert_script_run('cat /proc/cmdline');
-    assert_script_run('grep "pti=auto" /proc/cmdline');
-
-    #check cpu flags
-    assert_script_run('cat /proc/cpuinfo');
-    assert_script_run('grep "^flags.*pti.*" /proc/cpuinfo');
-
-    #check sysfs
-    assert_script_run( 'cat ' . $syspath . 'meltdown' );
-    assert_script_run(
-        'cat ' . $syspath . 'meltdown' . '| grep "^Mitigation: PTI$"' );
-
-    #chech dmesg
-    assert_script_run(
-        'dmesg | grep "Kernel/User page tables isolation: enabled"');
-    remove_grub_cmdline_settings("pti=auto");
-    grub_mkconfig;
-
+  my $obj = new Mitigation("meltdown", "", 0, "pti", "meltdown");
+#run base function testing
+  $obj->do_test();
 }
+
 
 sub test_flags {
     return { milestone => 1, fatal => 0 };
@@ -123,13 +41,11 @@ sub post_fail_hook {
     my ($self) = @_;
     select_console 'root-console';
     assert_script_run(
-"md /tmp/upload; cp $syspath* /tmp/upload; cp /proc/cmdline /tmp/upload; lscpu >/tmp/upload/cpuinfo; tar -jcvf /tmp/upload.tar.bz2 /tmp/upload"
+        "md /tmp/upload_mitigations; cp ". $Mitigation::syspath . "* /tmp/upload_mitigations; cp /proc/cmdline /tmp/upload_mitigations; lscpu >/tmp/upload_mitigations/cpuinfo; tar -jcvf /tmp/upload_mitigations.tar.bz2 /tmp/upload_mitigations"
     );
-    remove_grub_cmdline_settings("pti=off");
-    remove_grub_cmdline_settings("nopti");
+    remove_grub_cmdline_settings('pti=[a-z,]*');
     grub_mkconfig;
-    upload_logs '/tmp/upload.tar.bz2';
-    $self->SUPER::post_fail_hook;
+    upload_logs '/tmp/upload_mitigations.tar.bz2';
 }
 
 1;
