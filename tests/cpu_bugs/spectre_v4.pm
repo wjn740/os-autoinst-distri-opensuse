@@ -42,7 +42,7 @@ sub post_fail_hook {
     assert_script_run(
         "md /tmp/upload_mitigations; cp ". $Mitigation::syspath . "* /tmp/upload_mitigations; cp /proc/cmdline /tmp/upload_mitigations; lscpu >/tmp/upload_mitigations/cpuinfo; tar -jcvf /tmp/upload_mitigations.tar.bz2 /tmp/upload_mitigations"
     );
-    remove_grub_cmdline_settings('pti=[a-z,]*');
+    remove_grub_cmdline_settings('spec_store_bypass_disable=[a-z,]*');
     grub_mkconfig;
     upload_logs '/tmp/upload_mitigations.tar.bz2';
 }
