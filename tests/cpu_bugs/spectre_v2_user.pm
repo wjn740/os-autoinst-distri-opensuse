@@ -32,6 +32,7 @@ my %mitigations_list =
 		IA32_ARCH_CAPABILITIES => 2, #bit1 -- EIBRS
 		parameter => 'spectre_v2',
 		cpuflags => ['ibpb', 'stibp'],
+    sysfs_name => "spectre_v2",
 		sysfs => {
 				"on" => "Mitigation: Indirect Branch Restricted Speculation.* IBPB: always-on,.* STIBP: forced,.*", 
 				"off" => ".*IBPB: disabled,.*STIBP: disabled", 

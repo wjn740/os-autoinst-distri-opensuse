@@ -32,6 +32,7 @@ my %mitigations_list =
 		IA32_ARCH_CAPABILITIES => 16, #bit4 --SSB_NO 
 		parameter => 'spectre_v4',
 		cpuflags => ['ssbd'],
+    sysfs_name => "spec_store_bypass",
 		sysfs => {
 			"on" => "Mitigation: Speculative Store Bypass disabled",
 			"off" => "Vulnerable",
