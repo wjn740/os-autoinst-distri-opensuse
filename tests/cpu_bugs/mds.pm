@@ -27,7 +27,7 @@ use Mitigation;
 
 
 sub run {
-  my $obj = new Mitigation("spectre_v2", "", 0, "spectre_v2", "spectre_v2");
+  my $obj = new Mitigation("mds", "", 0, "mds", "mds");
 #run base function testing
   $obj->do_test();
 }
