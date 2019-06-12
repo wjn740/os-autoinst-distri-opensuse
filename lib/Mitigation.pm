@@ -24,7 +24,7 @@ use testapi;
 use utils;
 
 use Utils::Backends 'use_ssh_serial_console';
-use bootloader_setup qw(change_grub_config add_grub_cmdline_settings remove_grub_cmdline_settings grep_grub_settings grub_mkconfig set_framebuffer_resolution set_extrabootparams_grub_conf);
+use bootloader_setup qw(grub_mkconfig change_grub_config add_grub_cmdline_settings remove_grub_cmdline_settings grep_grub_settings set_framebuffer_resolution set_extrabootparams_grub_conf);
 use ipmi_backend_utils;
 use power_action_utils 'power_action';
 
@@ -172,7 +172,6 @@ sub check_default_status{
   if ( $ret ne 0 or $ret1 ne 0) { 
     remove_grub_cmdline_settings($self->{'parameter'} . "=[a-z]*");
     remove_grub_cmdline_settings("mitigations=[a-z]*");
-    grub_mkconfig();
     reboot_and_wait( $self, 150 );
     assert_script_run('grep -v "' . $self->{'parameter'} . '=off" /proc/cmdline');
   }   
@@ -180,13 +179,15 @@ sub check_default_status{
 
 sub check_cpu_flags {
   my $self = shift;
-  my $reverse = shift;
+  my $cmd = shift;
   my $flag;
   assert_script_run('cat /proc/cpuinfo');
   foreach $flag (@{$self->{'cpuflags'}}) {
-    assert_script_run('cat /proc/cpuinfo | grep "^flags.*' . $flag .'.*"');
-    if ($reverse) {
+    #switch off a feature, it wouldn't be display in 'flags'
+    if ($cmd eq "off") {
     	assert_script_run('cat /proc/cpuinfo | grep -v "^flags.*' . $flag .'.*"');
+    }else {
+    	assert_script_run('cat /proc/cpuinfo | grep "^flags.*' . $flag .'.*"');
     }
   }
 }
@@ -240,7 +241,8 @@ sub check_each_parameter_value {
   foreach $cmd (@{$self->cmdline()}) {
 	record_info("$self->{'name'}=$cmd", "Mitigation $self->{'name'} = $cmd  testing start.");
 	$self->add_parameter($cmd);
-	$self->check_cpu_flags();
+	$self->check_cmdline();
+	$self->check_cpu_flags($cmd);
 	$self->check_cmdline();
 	$self->check_sysfs($cmd);
 	$self->remove_parameter($cmd);
@@ -285,6 +287,7 @@ sub do_test {
 
   	remove_grub_cmdline_settings($self->{'parameter'} .'='. '[a-z]*');
 }
+
 
 
 1;

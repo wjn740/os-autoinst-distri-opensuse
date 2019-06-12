@@ -57,6 +57,7 @@ my %mitigations_list =
 		},
 	);
 
+
 sub run {
   my $obj = new Mitigation(\%mitigations_list);
 #run base function testing
