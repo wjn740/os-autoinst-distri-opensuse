@@ -30,17 +30,17 @@ my %mitigations_list =
 		name => "spectre_v2_user",
 		CPUID => hex 'C000000',
 		IA32_ARCH_CAPABILITIES => 2, #bit1 -- EIBRS
-		parameter => 'spectre_v2',
+		parameter => 'spectre_v2_user',
 		cpuflags => ['ibpb', 'stibp'],
     sysfs_name => "spectre_v2",
 		sysfs => {
-				"on" => "Mitigation: Indirect Branch Restricted Speculation.* IBPB: always-on,.* STIBP: forced,.*", 
-				"off" => ".*IBPB: disabled,.*STIBP: disabled", 
-				"prctl" => ".*IBPB: conditional.*STIBP: conditional.*",
-				"prctl,ibpb" => ".*IBPB: always-on.*STIBP: conditional.*",
-				"seccomp" => ".*STIBP: conditional.*",
-				"seccomp,ibpb" => ".*IBPB: always-on.*STIBP: conditional.*",
-				"auto" => "Mitigation: Indirect Branch Restricted Speculation.* IBPB: conditional,.* STIBP: conditional,.*",
+				"on" => "IBPB: always-on,.* STIBP: forced,.*", 
+				"off" => "IBPB: disabled,.*STIBP: disabled", 
+				"prctl" => "IBPB: conditional.*STIBP: conditional.*",
+				"prctl,ibpb" => "IBPB: always-on.*STIBP: conditional.*",
+				"seccomp" => "STIBP: conditional.*",
+				"seccomp,ibpb" => "IBPB: always-on.*STIBP: conditional.*",
+				"auto" => "IBPB: conditional,.* STIBP: conditional,.*",
 				},
 		cmdline => [
 				"on",
@@ -70,7 +70,8 @@ sub post_fail_hook {
     assert_script_run(
         "md /tmp/upload_mitigations; cp ". $Mitigation::syspath . "* /tmp/upload_mitigations; cp /proc/cmdline /tmp/upload_mitigations; lscpu >/tmp/upload_mitigations/cpuinfo; tar -jcvf /tmp/upload_mitigations.tar.bz2 /tmp/upload_mitigations"
     );
-    remove_grub_cmdline_settings('pti=[a-z,]*');
+    remove_grub_cmdline_settings('spectre_v2=[a-z,]*');
+    remove_grub_cmdline_settings('spectre_v2_user=[a-z,]*');
     grub_mkconfig;
     upload_logs '/tmp/upload_mitigations.tar.bz2';
 }
