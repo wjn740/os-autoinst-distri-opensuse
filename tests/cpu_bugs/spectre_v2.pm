@@ -25,9 +25,9 @@ use power_action_utils 'power_action';
 
 use Mitigation;
 
-my $ibrs_string = "Mitigation: Indirect Branch Restricted Speculation,";
+my $eibrs_string_on = "Mitigation: Enhanced IBRS, IBPB: always-on, RSB filling";
+my $eibrs_string_default = "Mitigation: Enhanced IBRS, IBPB: conditional, RSB filling";
 my $retpoline_string = "Mitigation: Full generic retpoline,";
-my $spectre_v2_string = $retpoline_string;
 
 my %mitigations_list = 
 	(
@@ -38,11 +38,11 @@ my %mitigations_list =
 		cpuflags => ['ibrs', 'ibpb', 'stibp'],
     sysfs_name => "spectre_v2",
 		sysfs => {
-				"on" => "${spectre_v2_string}.*IBPB: always-on, IBRS_FW, STIBP: forced.*", 
+				"on" => "${retpoline_string}.*IBPB: always-on, IBRS_FW, STIBP: forced.*", 
 				"off" => "Vulnerable,.*IBPB: disabled,.*STIBP: disabled", 
-				"auto" => "${spectre_v2_string}.*IBPB: conditional, IBRS_FW, STIBP: conditional,.*",
+				"auto" => "${retpoline_string}.*IBPB: conditional, IBRS_FW, STIBP: conditional,.*",
 				"retpoline" => "Mitigation: Full generic retpoline.*",
-				"ibrs" => "${ibrs_string}"
+				"default" => "",
 				},
 		cmdline => [
 				"on",
@@ -52,36 +52,19 @@ my %mitigations_list =
 				],
 	);
 sub run {
-
-    my $cpu_model = script_output(
-'cat /proc/cpuinfo | grep "^model[[:blank:]]*\:" | head -1 | awk -F \':\' \'{print $2}\''
-    );
-    my $cpu_family = script_output(
-'cat /proc/cpuinfo | grep "^cpu family[[:blank:]]*\:" | head -1 | awk -F \':\' \'{print $2}\''
-    );
-
-        if ( $cpu_family == 6 ) {
-
-            #SkyLake+ processor
-            if (   $cpu_model == 0x4E
-                or $cpu_model == 0x5E
-                or $cpu_model == 0x55
-                or $cpu_model == 0x8E
-                or $cpu_model == 0x9E )
-            {
-                record_info( 'SKL+', "Hardware is Intel and SLK+ platform" );
-                assert_script_run( "echo cpuinfo->model: " . $cpu_model );
-                assert_script_run(
-                    'dmesg | grep "Filling RSB on context switch"');
-                assert_script_run(
-'dmesg | grep "Enabling Restricted Speculation for firmware calls"'
-                );
-		$mitigations_list{'sysfs'}->{'on'} =~ s/${retpoline_string}/${ibrs_string}/g;
-		$mitigations_list{'sysfs'}->{'auto'} =~ s/${retpoline_string}/${ibrs_string}/g;
-
-            }
-        }
   my $obj = new Mitigation(\%mitigations_list);
+  my $ret = $obj->vulnerabilities();
+    if ($ret == 0) {
+	  record_info("EIBRS", "This machine support EIBRS.");
+	  $mitigations_list{'sysfs'}->{'on'} = ${eibrs_string_on};
+	  $mitigations_list{'sysfs'}->{'auto'} = ${eibrs_string_default};
+	  $mitigations_list{'sysfs'}->{'default'} = ${eibrs_string_default};
+	  #Fix me.
+	  #remove flags make sure testing could continue
+	  #EIBRS bit doesn't mean it needn't be tested.
+	  $mitigations_list{'IA32_ARCH_CAPABILITIES'} = 0;
+    }
+
 #run base function testing
   $obj->do_test();
 }
@@ -99,7 +82,6 @@ sub post_fail_hook {
     );
     remove_grub_cmdline_settings('spectre_v2=[a-z,]*');
     remove_grub_cmdline_settings('spectre_v2_user=[a-z,]*');
-    grub_mkconfig;
     upload_logs '/tmp/upload_mitigations.tar.bz2';
 }
 

@@ -269,6 +269,7 @@ sub do_test {
 	my $self = shift;
 	#load current cpu info
 	#check applicability
+        select_console 'root-console';
 	my $ret = $self->vulnerabilities();
 	if ($ret == 0) {
 		record_info('INFO', "This CPU is not affected by $self->{'name'}.");
