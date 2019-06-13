@@ -47,14 +47,17 @@ sub run {
 	#assert_script_run("mount -t nfs $nfs_hostname:/var/lib/openqa/share /var/lib/openqa/share");
 	
 	#Rsync
-	assert_script_run("echo \"[http://$nfs_hostname]\" >> /etc/openqa/workers.ini");
-	assert_script_run("echo \"TESTPOOLSERVER = rsync://$nfs_hostname/tests\" >>/etc/openqa/workers.ini");
-	
+	if (assert_script_run("grep -v \"[http://$nfs_hostname]\" /etc/openqa/workers.ini")) {
+		assert_script_run("echo \"[http://$nfs_hostname]\" >> /etc/openqa/workers.ini");
+		assert_script_run("echo \"TESTPOOLSERVER = rsync://$nfs_hostname/tests\" >>/etc/openqa/workers.ini");
+	}
 
         assert_script_run("sed -i '/^#.*global/s/^#//' /etc/openqa/workers.ini");
         assert_script_run("sed -i '/^HOST =.*/d' /etc/openqa/workers.ini");
-	if (script_run("grep \"^#.*HOST.*=.*\" /etc/openqa/workers.ini") == 0) {
-        	assert_script_run("sed -i '/^#.*HOST.*=.*/a HOST = $webui_hostname' /etc/openqa/workers.ini");
+
+
+	if (script_run("grep \"^#HOST.*=.*\" /etc/openqa/workers.ini") == 0) {
+        	assert_script_run("sed -i '/^#HOST.*=.*/a HOST = $webui_hostname' /etc/openqa/workers.ini");
 	}else {
         	assert_script_run("sed -i '/^\\[global\\]/a HOST = $webui_hostname' /etc/openqa/workers.ini");
 	}
