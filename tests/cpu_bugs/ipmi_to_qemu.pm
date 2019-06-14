@@ -39,17 +39,21 @@ sub run {
 		zypper_call("ar http://download.opensuse.org/repositories/devel:/openQA:/SLE-12/SLE_12_SP4/devel:openQA:SLE-12.repo");
 	}
         script_run("zypper -n --gpg-auto-import-keys ref");
-        script_run("zypper -n dup");
-	zypper_call("in openQA-worker");
+        script_run("zypper -n --auto-agree-with-licenses dup");
+	zypper_call("in openQA-worker perl-YAML-Tiny");
 	zypper_call("in --replacefiles perl-DBD-SQLite");
 
 	#NFS mount
 	#assert_script_run("mount -t nfs $nfs_hostname:/var/lib/openqa/share /var/lib/openqa/share");
 	
 	#Rsync
-	if (assert_script_run("grep -v \"[http://$nfs_hostname]\" /etc/openqa/workers.ini")) {
+	if (script_run("grep \"^\\[http://$nfs_hostname\\]\" /etc/openqa/workers.ini") eq 1) {
 		assert_script_run("echo \"[http://$nfs_hostname]\" >> /etc/openqa/workers.ini");
 		assert_script_run("echo \"TESTPOOLSERVER = rsync://$nfs_hostname/tests\" >>/etc/openqa/workers.ini");
+	}
+	if (script_run("grep \"^CACHEDIRECTORY = /var/lib/openqa/cache\" /etc/openqa/workers.ini") eq 1) {
+        	assert_script_run("sed -i '/^#HOST.*=.*/a CACHELIMIT = 200' /etc/openqa/workers.ini");
+        	assert_script_run("sed -i '/^#HOST.*=.*/a CACHEDIRECTORY = /var/lib/openqa/cache' /etc/openqa/workers.ini");
 	}
 
         assert_script_run("sed -i '/^#.*global/s/^#//' /etc/openqa/workers.ini");
@@ -69,6 +73,8 @@ sub run {
           . ' -o /etc/openqa/client.conf',
         60
     );
+        script_run('systemctl start openqa-worker-cacheservice-minion');
+        script_run('systemctl start openqa-worker-cacheservice');
         script_run('systemctl start openqa-worker@1');
         script_run('systemctl start openqa-worker@2');
         script_run('systemctl start openqa-worker@3');
