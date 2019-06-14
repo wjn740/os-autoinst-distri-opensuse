@@ -688,7 +688,8 @@ elsif (get_var("SLEPOS")) {
 }
 elsif (get_var('CPU_BUGS')) {
     if (check_var('BACKEND', 'ipmi')) {
-        loadtest "virt_autotest/login_console";
+	    loadtest "virt_autotest/login_console";
+
     }
     elsif (check_var('BACKEND', 'qemu')) {
     	boot_hdd_image;
