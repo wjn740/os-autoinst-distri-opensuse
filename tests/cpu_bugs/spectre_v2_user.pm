@@ -54,6 +54,16 @@ my %mitigations_list =
 	);
 
 sub run {
+    if ( check_var( 'BACKEND', 'qemu' ) ) {
+	  $mitigations_list{'cpuflags'} = ['ibpb'];
+	  $mitigations_list{'sysfs'}->{'on'} =~ s/STIBP: forced/STIBP: disabled/g;
+	  $mitigations_list{'sysfs'}->{'prctl'} =~ s/STIBP: conditional/STIBP: disabled/g;
+	  $mitigations_list{'sysfs'}->{'prctl,ibpb'} =~ s/STIBP: conditional/STIBP: disabled/g;
+	  $mitigations_list{'sysfs'}->{'prctl,ibpb'} =~ s/STIBP: conditional/STIBP: disabled/g;
+	  $mitigations_list{'sysfs'}->{'seccomp'} =~ s/STIBP: conditional/STIBP: disabled/g;
+	  $mitigations_list{'sysfs'}->{'seccomp,ibpb'} =~ s/STIBP: conditional/STIBP: disabled/g;
+	  $mitigations_list{'sysfs'}->{'auto'} =~ s/STIBP: conditional/STIBP: disabled/g;
+    }
   my $obj = new Mitigation(\%mitigations_list);
 #run base function testing
   $obj->do_test();
