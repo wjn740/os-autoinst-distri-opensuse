@@ -18,6 +18,7 @@ use strict;
 use warnings;
 
 use base "Exporter";
+use base "opensusebasetest";
 use Exporter;
 
 use testapi;
@@ -38,7 +39,7 @@ sub reboot_and_wait {
         use_ssh_serial_console;
     }
     else {
-        $self->wait_boot( textmode => 1, ready_time => 300 );
+        $self->wait_boot( textmode => 1, ready_time => 300, ,in_grub => 1);
         select_console 'root-console';
     }
 }
@@ -100,6 +101,7 @@ sub read_cpuid {
 
 sub read_msr {
 	my $self = shift;
+	script_output("modprobe msr");
 	my $edx = script_output(
 		"perl -e \'open(M,\"<\",\"/dev/cpu/0/msr\") and seek(M,0x10a,0) and read(M,\$_,8) and print\' | od -t u8 -A n"
 	);
@@ -221,7 +223,7 @@ sub check_cmdline {
 }
 
 sub check_one_parameter_value{
-	#testing each parameter.
+#testing one parameter.
 	my $self = shift;
 	my $cmd = shift;
 	if ($cmd) {

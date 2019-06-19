@@ -52,6 +52,12 @@ my %mitigations_list =
 				],
 	);
 sub run {
+
+    if ( check_var( 'BACKEND', 'qemu' ) ) {
+	  $mitigations_list{'cpuflags'} = ['ibrs', 'ibpb'];
+	  $mitigations_list{'sysfs'}->{'on'} =~ s/STIBP: forced/STIBP: disabled/g;
+	  $mitigations_list{'sysfs'}->{'auto'} =~ s/STIBP: conditional/STIBP: disabled/g;
+    }
   my $obj = new Mitigation(\%mitigations_list);
   my $ret = $obj->vulnerabilities();
     if ($ret == 0) {

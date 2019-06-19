@@ -45,8 +45,18 @@ my %mitigations_list =
 			"off",
 		],
 	);
+sub smt_status_qemu {
+  my $self = shift;
+  $mitigations_list{'sysfs'}->{'full'} =~ s/SMT vulnerable/SMT Host state unknown/ig;
+  $mitigations_list{'sysfs'}->{'full,nosmt'} =~ s/SMT disabled/SMT Host state unknown/ig;
+  $mitigations_list{'sysfs'}->{'off'} =~ s/SMT vulnerable/SMT Host state unknown/ig;
+  $mitigations_list{'sysfs'}->{'default'} =~ s/SMT vulnerable/SMT Host state unknown/ig;
+}
 
 sub run {
+  if ( check_var( 'BACKEND', 'qemu' ) ) {
+          smt_status_qemu();
+  }
   my $obj = new Mitigation(\%mitigations_list);
 #run base function testing
   $obj->do_test();

@@ -1,7 +1,7 @@
 # SUSE's openQA tests
 #
 # Copyright © 2009-2013 Bernhard M. Wiedemann
-# Copyright © 2012-2019 SUSE LLC
+# Copyright © 2012-2018 SUSE LLC
 #
 # Copying and distribution of this file, with or without modification,
 # are permitted in any medium without royalty provided the copyright
@@ -13,6 +13,8 @@
 
 use strict;
 use warnings;
+#use FindBin;
+#use lib $FindBin::Bin;
 
 use base "consoletest";
 use bootloader_setup;
@@ -25,36 +27,44 @@ use Mitigation;
 
 my %mitigations_list = 
 	(
-		name => "l1tf",
-		CPUID => hex '10000000',
-		IA32_ARCH_CAPABILITIES => 8, #bit3 --SKIP_L1TF_VMENTRY
-		parameter => 'l1tf',
-		cpuflags => ['flush_l1d'],
-    sysfs_name => "l1tf",
+		name => "mitigations",
+		parameter => 'mitigations',
+    		sysfs_name => ["mds", "l1tf", "meltdown", "spec_store_bypass", "spectre_v2"],
 		sysfs => {
-			"full" => "Mitigation: PTE Inversion; VMX: cache flushes, SMT disabled", 
-			"full,force" => "Mitigation: PTE Inversion; VMX: cache flushes, SMT disabled", 
-			"flush" => "Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable", 
-			"flush,nosmt" => "Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT disabled", 
-			"flush,nowarn" => "Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable",
-			"off" => "Mitigation: PTE Inversion; VMX: vulnerable",
-			"default" => "Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT vulnerable", 
+			"off" => {
+				"mds" => "Mitigation: Clear CPU buffers; SMT vulnerable",
+				"l1tf" => "Mitigation: PTE Inversion; VMX: vulnerable",
+				"spectre_v2" => "Vulnerable,.*IBPB: disabled,.*STIBP: disabled";
+				"meltdown" => "Vulnerable",
+				"spec_store_bypass" => "Vulnerable",
+			},
+			"auto,nosmt" => {
+				"mds" => "Mitigation: Clear CPU buffers; SMT disabled",
+				"l1tf" => "Mitigation: PTE Inversion; VMX: conditional cache flushes, SMT disabled",
+			},
 		},
 		cmdline => [
-			"full",
-			"full,force",
-			"flush",
-			"flush,nosmt",
-			"flush,nowarn",
+			"auto,nosmt",
 			"off",
 		],
 	);
 
+sub check_sysfs {
+	my ($self, $value) = @_;
+	my $sysfs;
+	record_info('mitigations', "this check_sysfs is overwrited!");
+	foreach $sysfs (@{$self->Sysfs()}) {
+		assert_script_run( 'cat ' . $syspath . $sysfs );
+		if (@_ == 2) {
+			assert_script_run(
+				'cat ' . $syspath . $sysfs . '| grep ' . '"'. $self->sysfs($value)->{$sysfs} . '"' );
+		}
+	}
+}
+
 sub run {
-    if ( check_var( 'BACKEND', 'qemu' ) ) {
-        record_info( 'softfail', "QEMU needn't run this testcase" );
-        return;
-    }
+  if ( check_var( 'BACKEND', 'qemu' ) ) {
+  }
   my $obj = new Mitigation(\%mitigations_list);
 #run base function testing
   $obj->do_test();
@@ -71,10 +81,9 @@ sub post_fail_hook {
     assert_script_run(
         "md /tmp/upload_mitigations; cp ". $Mitigation::syspath . "* /tmp/upload_mitigations; cp /proc/cmdline /tmp/upload_mitigations; lscpu >/tmp/upload_mitigations/cpuinfo; tar -jcvf /tmp/upload_mitigations.tar.bz2 /tmp/upload_mitigations"
     );
-    remove_grub_cmdline_settings('l1tf=[a-z,]*');
+    remove_grub_cmdline_settings('mds=[a-z,]*');
     grub_mkconfig;
     upload_logs '/tmp/upload_mitigations.tar.bz2';
-    $self->SUPER::post_fail_hook;
 }
 
 1;

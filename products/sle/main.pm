@@ -716,6 +716,9 @@ elsif (get_var('CPU_BUGS')) {
     if (get_var('L1TF')) {
         loadtest "cpu_bugs/l1tf";
     }
+    if (get_var('MITIGATIONS')) {
+        loadtest "cpu_bugs/mitigations";
+    }
     if (get_var('KVM_GUEST_INST')) {
         loadtest "cpu_bugs/kvm_guest_install";
     }
