@@ -40,7 +40,7 @@ sub run {
 	}
         script_run("zypper -n --gpg-auto-import-keys ref");
         script_run("zypper -n dup --auto-agree-with-licenses");
-	zypper_call("in openQA-worker perl-YAML-Tiny");
+	zypper_call("in openQA-worker perl-DBIx-Class-DeploymentHandler perl-YAML-Tiny");
 	zypper_call("in --replacefiles perl-DBD-SQLite");
 
 	#NFS mount

@@ -46,16 +46,15 @@ sub reboot_and_wait {
 
 our $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 
-sub new{
-
-	my $class = shift;
-
-	my $self = shift;
-
-	bless $self, $class;
-
-	return $self;
+sub new {
+    my ($class, $args) = @_;
+    my $self = $class->SUPER::new($args);
+    foreach (keys %{$args}) {
+    	$self->{$_} = $args->{$_};
+    }
+    return $self;
 }
+
 
 sub Name {
 	my ($self, $value) = @_;

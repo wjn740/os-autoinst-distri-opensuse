@@ -11,6 +11,7 @@
 # Summary: CPU BUGS on Linux kernel check
 # Maintainer: James Wang <jnwang@suse.com>
 
+package meltdown;
 use strict;
 use warnings;
 #use FindBin;
@@ -23,10 +24,10 @@ use testapi;
 use utils;
 use power_action_utils 'power_action';
 
-use Mitigation;
+use base "Mitigation";
 
-my %mitigations_list = 
-	(
+my $mitigations_list = 
+	{
 		name => "meltdown",
 		CPUID => hex '20000000',
 		IA32_ARCH_CAPABILITIES => 1, #bit0 -- RDCL_NO
@@ -55,11 +56,12 @@ my %mitigations_list =
 			"off" => "", 
 			"auto" => "pti",
 		},
-	);
+	};
 
 
 sub run {
-  my $obj = new Mitigation(\%mitigations_list);
+	print ref($mitigations_list);
+  my $obj = new meltdown($mitigations_list);
 #run base function testing
   $obj->do_test();
 }
