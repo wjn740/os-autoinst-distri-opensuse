@@ -53,12 +53,17 @@ my %mitigations_list =
 	);
 sub run {
 
+  my $obj = new Mitigation(\%mitigations_list);
+
     if ( check_var( 'BACKEND', 'qemu' ) ) {
+	    if ( get_var( 'MACHINE', '') =~ /NO-IBRS$/) {
+		$obj->check_cpu_flags("off");
+		return;
+	    }
 	  $mitigations_list{'cpuflags'} = ['ibrs', 'ibpb'];
 	  $mitigations_list{'sysfs'}->{'on'} =~ s/STIBP: forced/STIBP: disabled/g;
 	  $mitigations_list{'sysfs'}->{'auto'} =~ s/STIBP: conditional/STIBP: disabled/g;
     }
-  my $obj = new Mitigation(\%mitigations_list);
   my $ret = $obj->vulnerabilities();
     if ($ret == 0) {
 	  record_info("EIBRS", "This machine support EIBRS.");
