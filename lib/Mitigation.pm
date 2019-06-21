@@ -48,12 +48,9 @@ our $syspath = '/sys/devices/system/cpu/vulnerabilities/';
 
 sub new {
     my ($class, $args) = @_;
-    my $self = $class->SUPER::new($args);
-    foreach (keys %{$args}) {
-    	$self->{$_} = $args->{$_};
-    }
-    return $self;
+    return bless $args, $class;
 }
+
 
 
 sub Name {
@@ -271,6 +268,7 @@ sub do_test {
 	#load current cpu info
 	#check applicability
         select_console 'root-console';
+
 	my $ret = $self->vulnerabilities();
 	if ($ret == 0) {
 		record_info('INFO', "This CPU is not affected by $self->{'name'}.");
