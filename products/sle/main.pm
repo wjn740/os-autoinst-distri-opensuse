@@ -690,9 +690,9 @@ elsif (get_var('CPU_BUGS')) {
     }
     elsif (check_var('BACKEND', 'qemu')) {
     	boot_hdd_image;
-    	loadtest "console/system_prepare";
-    	loadtest "console/consoletest_setup";
-    	loadtest "console/hostname";
+	loadtest "console/system_prepare";
+	loadtest "console/consoletest_setup";
+	loadtest "console/hostname";
     	if (get_var('PREPARE_REPO')) {
     	    loadtest "cpu_bugs/add_repos_qemu"
     	}

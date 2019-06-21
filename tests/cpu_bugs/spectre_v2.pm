@@ -53,6 +53,7 @@ my %mitigations_list =
 	);
 sub run {
 
+  select_console 'root-console';
   my $obj = new Mitigation(\%mitigations_list);
 
     if ( check_var( 'BACKEND', 'qemu' ) ) {

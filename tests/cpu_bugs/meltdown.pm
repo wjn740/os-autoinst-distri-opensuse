@@ -18,13 +18,11 @@ use warnings;
 #use lib $FindBin::Bin;
 
 use base "consoletest";
+use base "Mitigation";
 use bootloader_setup;
 use strict;
 use testapi;
 use utils;
-use power_action_utils 'power_action';
-
-use base "Mitigation";
 
 my $mitigations_list = 
 	{
@@ -58,9 +56,18 @@ my $mitigations_list =
 		},
 	};
 
+sub new {
+	my ($class, $args) = @_;
+	#Help constructor distinguishing is our own test object or openQA call
+	if ($args eq $mitigations_list) {
+		return bless $args, $class;	
+	}
+	my $self = $class->SUPER::new($args);
+	return $self;
+}
 
 sub run {
-	print ref($mitigations_list);
+        select_console 'root-console';
   my $obj = new meltdown($mitigations_list);
 #run base function testing
   $obj->do_test();
