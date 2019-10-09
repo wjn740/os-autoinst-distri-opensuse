@@ -50,6 +50,7 @@ sub run {
 	assert_script_run("git clone -q --single-branch -b $git_branch_name --depth 1 $git_repo_url");
 	assert_script_run("pushd mitigation-testsuite");
 	assert_script_run("git status");
+	assert_script_run("PAGER= git log -1");
 
 	#deploy script might be return not 0. use script_run.
 	#we ignore exit code now. testing result will be checked later.

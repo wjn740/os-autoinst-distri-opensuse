@@ -52,6 +52,7 @@ sub run {
 	assert_script_run("git clone -q --single-branch -b $git_branch_name --depth 1 $git_repo_url");
 	assert_script_run("pushd mitigation-testsuite");
 	assert_script_run("git status");
+	assert_script_run("PAGER= git log -1");
 
 	assert_script_run("sed -i \'s/vm_cpus=.*/vm_cpus=${vm_cpus}/\' test.config");
 

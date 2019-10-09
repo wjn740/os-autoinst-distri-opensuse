@@ -67,42 +67,47 @@ sub run {
 	assert_script_run("git clone -q --single-branch -b $git_branch_name --depth 1 $git_repo_url");
 	assert_script_run("pushd mitigation-testsuite");
 	assert_script_run("git status");
+	assert_script_run("PAGER= git log -1");
 
-	#ucode update is disable by default on XEN
-	my $ret = script_run("xl info | grep \"xen_commandline\" | grep \"ucode=scan\"");
-	#if ($ret) {
-	#	add_grub_xen_cmdline_settings("ucode=scan");
+	##ucode update is disable by default on XEN
+	#my $ret = script_run("xl info | grep \"xen_commandline\" | grep \"ucode=scan\"");
+	##if ($ret) {
+	##	add_grub_xen_cmdline_settings("ucode=scan");
+	##}
+	#my $ret = script_run("xl info | grep \"xen_commandline\" | grep \"dom0_max_vcpus=8 dom0_mem=8G,max:8G\"");
+	##if ($ret) {
+	##	add_grub_xen_cmdline_settings("dom0_max_vcpus=8 dom0_mem=8G,max:8G");
+	##}
+
+	##check if XEN Hypervisor set spec-ctrl=off and dom5's kernel set mitigations=off
+	##If yes, we set to default mode.
+	#$ret = script_run("xl info | grep \"xen_commandline\" | grep \"spec-ctrl=off\"");
+	#if ($ret eq 0) {
+	#	#Sometime parameter be writen on the line of GRUB_CMDLINE_LINUX
+	#	assert_script_run("sed -i '/GRUB_CMDLINE_XEN_DEFAULT=/s/spec-ctrl=off/ /g' /etc/default/grub");
+
+	#	#remove_xen_grub_cmdline_settings("mitigations=off");
+
 	#}
+	#$ret = script_run("grep \"mitigations=off\" /proc/cmdline");
+	#if ($ret eq 0) {
+	#	#Sometime parameter be writen on the line of GRUB_CMDLINE_LINUX
+	#	assert_script_run("sed -i '/GRUB_CMDLINE_LINUX=/s/mitigations=off/ /g' /etc/default/grub");
 
-	#check if XEN Hypervisor set spec-ctrl=off and dom0's kernel set mitigations=off
-	#If yes, we set to default mode.
-	$ret = script_run("xl info | grep \"xen_commandline\" | grep \"spec-ctrl=off\"");
-	if ($ret eq 0) {
-		#Sometime parameter be writen on the line of GRUB_CMDLINE_LINUX
-		assert_script_run("sed -i '/GRUB_CMDLINE_XEN_DEFAULT=/s/spec-ctrl=off/ /g' /etc/default/grub");
+	#	assert_script_run("sed -i '/GRUB_CMDLINE_LINUX_XEN_REPLACE_DEFAULT=/s/mitigations=off/ /g' /etc/default/grub");
 
-		#remove_xen_grub_cmdline_settings("mitigations=off");
+	#	#This remove can't make sure clean all lines.
+	#	remove_grub_cmdline_settings("mitigations=off");
 
-	}
-	$ret = script_run("grep \"mitigations=off\" /proc/cmdline");
-	if ($ret eq 0) {
-		#Sometime parameter be writen on the line of GRUB_CMDLINE_LINUX
-		assert_script_run("sed -i '/GRUB_CMDLINE_LINUX=/s/mitigations=off/ /g' /etc/default/grub");
-
-		assert_script_run("sed -i '/GRUB_CMDLINE_LINUX_XEN_REPLACE_DEFAULT=/s/mitigations=off/ /g' /etc/default/grub");
-
-		#This remove can't make sure clean all lines.
-		remove_grub_cmdline_settings("mitigations=off");
-
-	}
+	#}
 	#reboot make new kernel command-line available
-	Mitigation::reboot_and_wait($self, 150);
+	#Mitigation::reboot_and_wait($self, 150);
 
 	#check new kernel command-line
-	$ret = script_run("grep \"mitigations=off\" /proc/cmdline");
-	if ($ret eq 0) {
-		die 'remove "mitigations=off" from kernel command-line failed';
-	}
+	#$ret = script_run("grep \"mitigations=off\" /proc/cmdline");
+	#if ($ret eq 0) {
+	#	die 'remove "mitigations=off" from kernel command-line failed';
+	#}
 
 
 	assert_script_run("pushd ~/mitigation-testsuite");
